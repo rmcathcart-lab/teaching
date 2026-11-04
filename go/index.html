@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher Ledger</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f5f3ee">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231c2230'/%3E%3Cpath d='M10 26 32 13l22 13-22 13z' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/%3E%3Cpath d='M20 33v11c7 5 17 5 24 0V33' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="../assets/icon.png">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f5f3ee; color: #3a4254; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .box { text-align: center; padding: 24px; }
+  .box b { color: #1c2230; }
+  a { color: #13807a; }
+  .spin { width: 26px; height: 26px; margin: 0 auto 14px; border: 3px solid #e2ded4; border-top-color: #1c2230; border-radius: 50%; animation: s .8s linear infinite; }
+  @keyframes s { to { transform: rotate(1turn); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+</style>
+<script src="../js/courses.js"></script>
+</head>
+<body>
+<div class="box" id="box"><div class="spin" aria-hidden="true"></div><div id="msg">Finding your class…</div></div>
+<script>
+/* The universal bookmark: during a class, that class's Teacher Ledger; at any other time, the class taught last.
+ * It uses the schedule saved on this device (refreshed from the Teaching Hub when it's more than an hour old).
+ * ?at=2026-11-04T10:40 pretends it's that time (for checking); ?show=1 shows where it would go instead of going. */
+(function () {
+  var T = window.TEACH, q = new URLSearchParams(location.search), msg = document.getElementById('msg');
+  var at = q.get('at') ? new Date(q.get('at')).getTime() : Date.now();
+  function go(data) {
+    var t = T.target(at, data);
+    if (!t) { msg.innerHTML = 'Your schedule isn’t set up yet. <a href="../#/schedule">Open the Teaching Hub</a>'; document.querySelector('.spin').remove(); return; }
+    var where = '<b>' + T.esc(t.label || (t.course.name + ' · Block ' + t.block)) + '</b>';
+    msg.innerHTML = (t.why === 'now' ? 'Opening ' : t.why === 'first' ? 'Opening your first class: ' : 'Opening the class you taught last: ') + where + '…';
+    if (q.get('show')) { msg.innerHTML += '<br><a href="' + t.url + '">' + T.esc(t.url) + '</a>'; document.querySelector('.spin').remove(); return; }
+    location.replace(t.url);
+  }
+  var data = T.data();
+  if (T.BACKEND && (T.dataAge() > 3600000 || !data.semesters.length)) {
+    var done = false, timer = setTimeout(function () { if (!done) { done = true; go(T.data()); } }, 4000);
+    T.refresh().then(function (d) { if (!done) { done = true; clearTimeout(timer); go(d); } });
+  } else go(data);
+})();
+</script>
+</body>
+</html>
