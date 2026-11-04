@@ -12,7 +12,7 @@
  * on this device only (handy until the backend is deployed). */
 (function (root) {
   'use strict';
-  var BACKEND = '';
+  var BACKEND = 'https://script.google.com/macros/s/AKfycbwkxGzjFREfSIpOGmsD7K7dRgGdvGUvQkTtEd_vlNshBZDLnnrGnEihxEA_C3WstVkTrg/exec';
 
   var T = root.TEACH = root.TEACH || {};
   /* the site root (https://rmcathcart-lab.github.io/): this file lives at <root>/teaching/js/courses.js */
