@@ -15,7 +15,7 @@ async def setup(ctx, keys=True, backend=True):
     for path, body in CFG.items():
         await ctx.route(BASE + path, h(body))
     init = ''
-    if backend: init += "window.TEACH_BACKEND = '%s';" % MOCKS['teaching']
+    init += "window.TEACH_BACKEND = '%s';" % (MOCKS['teaching'] if backend else '')   # '' = on-device mode (no backend)
     if keys: init += "try { localStorage.setItem('teach/key','teachkey'); } catch(e) {}"
     await ctx.add_init_script(init)
 def errs_of(pg, errs, tag):

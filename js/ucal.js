@@ -71,7 +71,7 @@
       if (off.length) legend.appendChild(el('span', 'small muted', (off.length > 1 ? 'Blocks ' : 'Block ') + off.join(', ') + ': prep'));
     }
     function drawNotes() {
-      notes.innerHTML = '';
+      notes.innerHTML = ''; var late = [];
       classes.forEach(function (x) {
         var e = E[x.block], name = '<b>' + esc(x.label || x.course.name + ' · Block ' + x.block) + '</b>';
         if (!e.b || e.status !== 'ok') {
@@ -83,7 +83,7 @@
           m.appendChild(button('btn-small btn-primary', 'Make it, starting ' + esc(T.nice(sem.start)), function () { this.disabled = true; e.b.makeCal(x.cls, sem.start).then(function () { load(); }); }));
           notes.appendChild(m); return;
         }
-        if (e.r.last && e.r.last > sem.end) notes.appendChild(el('div', 'notice warn', name + ' runs past the end of ' + esc(sem.name) + ': its last day is ' + esc(T.nice(e.r.last)) + '.'));
+        if (e.r.last && e.r.last > sem.end) late.push(esc(x.label || x.course.name) + ' (' + esc(T.nice(e.r.last, { month: 'short', day: 'numeric' })) + ')');
         if (e.r.skipped && e.r.skipped.length && !U.hidden[x.block]) {
           var tray = el('div', 'tray', '<span class="small muted">' + esc(x.label || x.course.name) + ' · skipped:</span>');
           tray.dataset.block = x.block;
@@ -91,11 +91,17 @@
           notes.appendChild(tray);
         }
       });
+      if (late.length) notes.insertBefore(el('div', 'notice warn', 'Planned past the end of ' + esc(sem.name) + ' (' + esc(T.nice(sem.end, { month: 'short', day: 'numeric' })) + '): ' + late.join(', ') + '.'), notes.firstChild);
     }
     function drawGrid() {
       var keep = U.scroll; box.innerHTML = '';
-      var hd = el('div', 'ucal-hd'), mon = el('div', 'ucal-month', ''), tb = button('btn-small ucal-today', 'Today', function () { scrollTo(T.today(), true); });
-      hd.appendChild(mon); hd.appendChild(tb);
+      /* header: the month you're reading, with ‹ Today › to jump a month at a time (like the course calendars) */
+      var hd = el('div', 'ucal-hd'), mon = el('h2', 'ucal-month', ''), navb = el('div', 'ucal-nav');
+      var pv = button('btn-icon', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>', function () { jump(-1); }); pv.setAttribute('aria-label', 'Previous month'); pv.title = 'Previous month';
+      var tb = button('btn-today', 'Today', function () { scrollTo(T.today(), true); });
+      var nx = button('btn-icon', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>', function () { jump(1); }); nx.setAttribute('aria-label', 'Next month'); nx.title = 'Next month';
+      navb.appendChild(pv); navb.appendChild(tb); navb.appendChild(nx);
+      hd.appendChild(mon); hd.appendChild(navb);
       var wh = el('div', 'ucal-wd'); WD.forEach(function (d, i) { wh.appendChild(el('div', i === 0 || i === 6 ? 'we' : '', d)); }); hd.appendChild(wh);
       box.appendChild(hd);
       var weeks = el('div', 'ucal-weeks' + (U.offMode ? ' offmode' : '')), today = T.today();
@@ -103,11 +109,15 @@
         var row = el('div', 'uw'); row.dataset.week = w;
         for (var i = 0; i < 7; i++) {
           var d = T.addDays(w, i), dt = T.parse(d), first = dt.getDate() === 1, inSem = d >= sem.start && d <= sem.end;
-          if (i === 0 || i === 6) { row.appendChild(el('div', 'ud we' + (first ? ' first' : ''), '<div class="ud-n">' + (first ? MONTHS[dt.getMonth()].slice(0, 3) + ' ' : '') + dt.getDate() + '</div>')); continue; }
-          var off = T.isOff(d, S.data), cell = el('div', 'ud' + (off ? ' off' : '') + (d === today ? ' today' : '') + (d < today ? ' past' : '') + (first ? ' first' : '') + (inSem ? '' : ' outside'));
-          cell.dataset.date = d;
+          /* where a month starts: a line along the top of its first week and down the left of the 1st */
+          var mcls = (dt.getDate() <= 7 ? ' wk1' : '') + (first ? ' first' : ''), num = (first ? '<b class="ud-mon">' + MONTHS[dt.getMonth()].slice(0, 3) + '</b> ' : '') + dt.getDate();
+          var big = first ? '<div class="ud-mbig">' + MONTHS[dt.getMonth()] + '</div>' : '';   // the month's name, big while the calendar scrolls
+          if (i === 0 || i === 6) { var wc = el('div', 'ud we' + mcls, '<div class="ud-h"><span class="ud-n">' + num + '</span></div>' + big); wc.dataset.ym = d.slice(0, 7); row.appendChild(wc); continue; }
+          var off = T.isOff(d, S.data), cell = el('div', 'ud' + mcls + (off ? ' off' : '') + (d === today ? ' today' : '') + (d < today ? ' past' : '') + (inSem ? '' : ' outside'));
+          cell.dataset.date = d; cell.dataset.ym = d.slice(0, 7);
           var t = T.dayType(d);
-          cell.appendChild(el('div', 'ud-h', '<span class="ud-n">' + (first ? MONTHS[dt.getMonth()].slice(0, 3) + ' ' : '') + dt.getDate() + '</span>' + (off ? '' : '<span class="ud-t">' + ({ day1: 'D1', day2: 'D2', fri: 'Fri' })[t] + '</span>')));
+          cell.appendChild(el('div', 'ud-h', '<span class="ud-n">' + num + '</span>' + (off ? '' : '<span class="ud-t">' + ({ day1: 'Day 1', day2: 'Day 2', fri: 'Fri' })[t] + '</span>')));
+          if (big) cell.insertAdjacentHTML('beforeend', big);
           if (off) cell.appendChild(el('div', 'ud-off', 'No school'));
           else T.periods(d, S.data).forEach(function (p) {
             var e = E[p.block], ent = T.entry(sem, p.block);
@@ -118,7 +128,7 @@
             var chips = el('div', 'ub-c');
             var items = e.r && e.r.ok && e.r.days ? (e.r.days[d] || []) : [];
             items.forEach(function (it) { var c = H.chip(it); c.dataset.key = it.key; c.dataset.block = p.block; hook(c, e.x, it, d); chips.appendChild(c); });
-            if (!items.length && e.r && e.r.ok && !e.r.none) chips.appendChild(el('span', 'ub-none', '—'));
+            if (!items.length && e.r && e.r.ok && !e.r.none) chips.appendChild(el('span', 'ub-none', 'nothing planned'));
             r.appendChild(chips); cell.appendChild(r);
           });
           if (U.offMode && t) cell.addEventListener('click', toggleOff.bind(null, d));
@@ -127,20 +137,39 @@
         weeks.appendChild(row);
       }
       box.appendChild(weeks);
-      U.box = box; U.weeks = weeks; U.mon = mon;
-      box.onscroll = function () { U.scroll = box.scrollTop; month(); };
-      requestAnimationFrame(function () { if (keep != null) box.scrollTop = keep; else scrollTo(today < sem.start ? sem.start : today > sem.end ? sem.end : today); month(); });
+      U.box = box; U.weeks = weeks; U.mon = mon; U.shown = '';
+      var raf = 0, still = 0;
+      box.onscroll = function () {
+        U.scroll = box.scrollTop;
+        if (!raf) raf = requestAnimationFrame(function () { raf = 0; month(); });
+        if (box._quiet) { box._quiet = false; return; }   // jumping to a date isn't scrolling
+        box.classList.add('scrolling'); clearTimeout(still); still = setTimeout(function () { box.classList.remove('scrolling'); }, 550);
+      };
+      requestAnimationFrame(function () { if (keep != null) { box._quiet = true; box.scrollTop = keep; } else scrollTo(today < sem.start ? sem.start : today > sem.end ? sem.end : today); month(); });
     }
+    /* the month you're reading: the week a third of the way down, by its middle day; other months' days are dimmer */
     function month() {
-      var rows = U.weeks ? U.weeks.children : [], top = U.box.getBoundingClientRect().top + 70, best = null;
-      for (var i = 0; i < rows.length; i++) { var r = rows[i].getBoundingClientRect(); if (r.bottom > top) { best = rows[i]; break; } }
-      if (best) { var d = T.parse(T.addDays(best.dataset.week, 3)); U.mon.textContent = MONTHS[d.getMonth()] + ' ' + d.getFullYear(); }
+      if (!U.weeks) return;
+      var rows = U.weeks.children, hdh = U.box.querySelector('.ucal-hd').offsetHeight, probe = U.box.scrollTop + hdh + (U.box.clientHeight - hdh) * 0.3, best = null;
+      for (var i = 0; i < rows.length; i++) { var r = rows[i]; if (r.offsetTop + r.offsetHeight > probe) { best = rows[i]; break; } }
+      if (!best) best = rows[rows.length - 1];
+      var ym = T.addDays(best.dataset.week, 3).slice(0, 7);
+      if (ym === U.shown) return;
+      U.shown = ym; U.mon.innerHTML = MONTHS[+ym.slice(5, 7) - 1] + ' <small>' + ym.slice(0, 4) + '</small>';
+      [].forEach.call(U.weeks.querySelectorAll('.ud'), function (c) { c.classList.toggle('other', c.dataset.ym !== ym); });
     }
-    function scrollTo(date, smooth) {
+    /* ‹ ›: the week of the 1st of the month before or after (quick repeated taps keep counting) */
+    var aim = null;
+    function jump(dm) {
+      var ym = aim && Date.now() - aim.at < 900 ? aim.ym : (U.shown || T.today().slice(0, 7)), t = new Date(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + dm, 1, 12), k = T.key(t);
+      if (k < from) k = from; if (k > to) return;
+      aim = { ym: k.slice(0, 7), at: Date.now() }; scrollTo(k, true, true);
+    }
+    function scrollTo(date, smooth, noFlash) {
       var w = U.weeks && U.weeks.querySelector('[data-week="' + weekStart(date) + '"]'); if (!w) return;
-      var y = w.offsetTop - U.box.querySelector('.ucal-hd').offsetHeight - 6;
-      if (smooth) U.box.scrollTo({ top: y, behavior: 'smooth' }); else U.box.scrollTop = y;
-      var c = U.weeks.querySelector('.ud[data-date="' + date + '"]'); if (c && smooth) { c.classList.add('flash'); setTimeout(function () { c.classList.remove('flash'); }, 2500); }
+      var y = Math.max(0, w.offsetTop - U.box.querySelector('.ucal-hd').offsetHeight - 6);
+      if (smooth) U.box.scrollTo({ top: y, behavior: 'smooth' }); else { if (Math.abs(U.box.scrollTop - y) > 1) U.box._quiet = true; U.box.scrollTop = y; }
+      var c = U.weeks.querySelector('.ud[data-date="' + date + '"]'); if (c && smooth && !noFlash) { c.classList.add('flash'); setTimeout(function () { c.classList.remove('flash'); }, 2500); }
     }
     U.scrollTo = scrollTo;
 
@@ -217,6 +246,7 @@
       function act(label, fn, cls) { acts.appendChild(button('btn-small ' + (cls || ''), label, function () { closePop(); fn(); })); }
       function link(label, href) { var a = el('a', 'btn btn-small', label); a.href = href; if (/↗/.test(label)) { a.target = '_blank'; a.rel = 'noopener'; } acts.appendChild(a); }
       if (it.lessonUrl) link('Lesson page ↗', it.lessonUrl);
+      if (it.teacherUrl) link('Mission guide ↗', it.teacherUrl);
       if (it.kind === 'mission') {
         if (date) {
           act('One class longer', function () { after(x, b.lengthen(x.cls, it.key, 1), it.label + ' is one class longer — everything after it moved.'); });

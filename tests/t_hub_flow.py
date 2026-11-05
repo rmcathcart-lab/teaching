@@ -78,13 +78,13 @@ async def main():
         print('noschool everywhere:', get('math10c', 'action=classes&key=testkey')['noSchool'], get('math15', 'action=classes&key=testkey')['noSchool'], get('robotics', 'action=classes&key=testkey')['noSchool'])
         await pg.screenshot(path=SH + 'cal_off.png')
         # today
-        await pg.goto(BASE + 'teaching/#/today/2026-11-05'); await pg.wait_for_selector('.period'); await pg.wait_for_timeout(2500)
+        await pg.goto(BASE + 'teaching/#/today/2026-11-05'); await pg.wait_for_selector('.slot-card'); await pg.wait_for_timeout(2500)
         await pg.screenshot(path=SH + 'today.png', full_page=True)
         # sub plans
-        await pg.goto(BASE + 'teaching/#/subs/2026-11-05'); await pg.wait_for_selector('.sub-sec', timeout=20000); await pg.wait_for_timeout(500)
+        await pg.goto(BASE + 'teaching/#/subs/2026-11-05'); await pg.wait_for_selector('.p-sec', timeout=20000); await pg.wait_for_timeout(500)
         await pg.screenshot(path=SH + 'subs.png', full_page=True)
         async with pg.expect_download() as dl:
-            await pg.click('.sub-h .btn-primary')
+            await pg.click('.sub-side .btn-primary')
         d = await dl.value; path = SP + 'subplan.docx'; await d.save_as(path)
         z = zipfile.ZipFile(path); xml = z.read('word/document.xml').decode()
         print('docx ok, words:', len(xml), 'has Block B:', 'Block B' in xml, 'hyperlink:', 'w:hyperlink' in xml)

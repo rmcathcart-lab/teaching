@@ -9,7 +9,7 @@ Mr. Cathcart's universal settings and the view across every class: https://rmcat
 | **Schedule** | `#/schedule` | Semesters: which course is in which block. Saving makes any new classes in each course's ledger |
 | **Sub plans** | `#/subs/<date>` | A full day's plans for a substitute, editable on the page, downloaded as a Word file |
 | **Settings** | `#/settings` | Bell times, days off, sub-plan details, course sign-ins, the universal bookmark |
-| **Universal bookmark** | `/teaching/go/` | During a class: that class's Teacher Ledger. Any other time: the class taught last |
+| **Universal bookmark** | `/teaching/go/` | During a class: that class's Teacher Ledger. Any other time: the class taught last. `go/?add=1` is the set-up page for adding it to a Home Screen or Dock (it stays put so the bookmark gets the hub's icon; `go/manifest.webmanifest` makes the bookmark open `/teaching/go/`) |
 
 ## How it fits with the course sites
 
@@ -37,7 +37,8 @@ All the course sites live at the same web address (rmcathcart-lab.github.io), so
 ## Backend
 
 `backend/Code.gs` is a small Apps Script web app (Execute as: me · Who has access: Anyone) that stores the settings as
-script properties: BELL, NOSCHOOL, SEMESTERS, SUB, KEYS. Nothing about students is stored here.
+script properties: BELL, NOSCHOOL, SEMESTERS, SUB, SUBX (the Hour Zero emergency procedures, kept here rather than on
+the public site), KEYS. Nothing about students is stored here.
 
 1. Make a new Apps Script project in the school account, paste `backend/Code.gs`, and run `setup()` once. It logs the
    teacher key (also under Project Settings → Script properties → TEACHER_KEY).
@@ -58,6 +59,9 @@ After changing `Code.gs`, deploy a **new version of the same deployment** so the
 | `js/hub.js` | The hub: settings store, course bridges, Today, Schedule, Settings |
 | `js/ucal.js` | The universal calendar (drag math lessons, tap for options, robotics mission lengths, days off) |
 | `js/subplan.js` | Sub plans and the Word file (`assets/vendor/docx.js`, the docx library, MIT, loaded only when downloading) |
+| `assets/hub.css` | The look: graphite header, cool paper, course colours, highlighter yellow for now/today. Font: Public Sans (OFL), self-hosted in `assets/fonts` |
+| `assets/icon.svg`, `icon*.png`, `manifest.webmanifest` | The hub's icon (a day of blocks with the current one highlighted) and app manifest |
+| `assets/parking-map.jpg` | The school parking map with stall 41 circled, from Ryan's old sub plans (the last page of every sub plan) |
 | `go/index.html` | The universal bookmark. `?show=1&at=2026-11-05T13:00` shows where it would go at that time |
 | `backend/Code.gs`, `backend/mock_server.js` | The Apps Script backend, and a local stand-in for tests (teacher key `teachkey`) |
 
@@ -65,8 +69,9 @@ After changing `Code.gs`, deploy a **new version of the same deployment** so the
 
 ## Sub plans
 
-Pick a day; the hub writes one section per class from that day's calendar: the lesson (with the lesson page to project,
+Pick a day; the hub writes one section per period (numbered in the order the sub teaches them) from that day's calendar: the lesson (with the lesson page to project,
 the notes PDF, the option for students to teach themselves from the lesson, the assignment and how to sign in, and whether
 calculators are allowed), robotics missions (day N of M, parts, due day), prep and lunch, then the rules and routines and
-sign-in help from Settings. Every section can be edited before downloading (edits are kept on that device for that date).
+sign-in help from Settings, the Hour Zero emergency procedures (their own page) and the parking map (last page). The page
+shows the plan formatted like the Word file; click a section to edit it (edits are kept on that device for that date).
 A unit test on that day gets a warning (only the teacher can launch a test) with a button to move it to the next class.

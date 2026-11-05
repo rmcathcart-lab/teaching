@@ -25,7 +25,7 @@
   function normalise(d) {
     d = d || {};
     return { bell: d.bell && d.bell.day1 ? d.bell : T.DEFAULT_BELL, bellCustom: !!d.bellCustom, noSchool: Array.isArray(d.noSchool) ? d.noSchool.slice().sort() : [],
-      semesters: Array.isArray(d.semesters) ? d.semesters : [], sub: d.sub || {}, keys: d.keys || {} };
+      semesters: Array.isArray(d.semesters) ? d.semesters : [], sub: d.sub || {}, subx: d.subx || {}, keys: d.keys || {} };
   }
   H.load = function () {
     if (LOCAL) { S.data = normalise(localData()); T.remember(S.data); return Promise.resolve(S.data); }
@@ -35,7 +35,7 @@
     });
   };
   /* save one setting: what = bell | noschool | semesters | sub | keys */
-  var FIELD = { bell: 'bell', noschool: 'noSchool', semesters: 'semesters', sub: 'sub', keys: 'keys' };
+  var FIELD = { bell: 'bell', noschool: 'noSchool', semesters: 'semesters', sub: 'sub', subx: 'subx', keys: 'keys' };
   H.save = function (what, value) {
     if (LOCAL) {
       var all = localData();
@@ -51,6 +51,7 @@
       else if (what === 'noschool') S.data.noSchool = d.noSchool;
       else if (what === 'semesters') S.data.semesters = d.semesters;
       else if (what === 'sub') S.data.sub = d.sub;
+      else if (what === 'subx') S.data.subx = d.subx;
       else if (what === 'keys') S.data.keys = d.keys;
       T.remember(S.data); return d;
     });
@@ -158,18 +159,22 @@
   H.go = function (tab, arg) { location.hash = '#/' + tab + (arg ? '/' + arg : ''); };
   function drawTop() {
     top.innerHTML = '';
-    var brand = el('button', 'brand brand-btn', '<span class="brand-mark hub-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5-9 5.5z"/><path d="M7 12v4.5c3 2.2 7 2.2 10 0V12"/></svg></span><span class="brand-name">Teaching Hub</span><span class="brand-caret" aria-hidden="true"></span>');
+    var brand = el('button', 'brand', '<img src="' + T.HUB + 'assets/icon.svg" alt="" width="32" height="32"><span>Teaching Hub</span><svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>');
     brand.type = 'button'; brand.title = 'Switch course'; brand.setAttribute('aria-haspopup', 'menu'); brand.setAttribute('aria-expanded', 'false');
     brand.addEventListener('click', function (e) { e.stopPropagation(); T.menu(brand, { current: 'hub' }); });
     top.appendChild(brand);
     var nav = el('nav', 'tabs'); nav.setAttribute('aria-label', 'Hub');
     TABS.forEach(function (t) { var a = el('a', 'tab' + (H.tab === t[0] ? ' on' : ''), t[1]); a.href = '#/' + t[0]; if (H.tab === t[0]) a.setAttribute('aria-current', 'page'); nav.appendChild(a); });
     top.appendChild(nav);
+    var td = T.today(), off = S.data && T.isOff(td, S.data), dt = T.dayType(td);
+    var now = el('a', 'top-day' + (dt && !off ? ' school' : ''), '<b>' + esc(T.nice(td, { weekday: 'short', month: 'short', day: 'numeric' })) + '</b><span>' + (dt ? (off ? 'No school' : H.dayLabel(td)) : 'Weekend') + '</span>');
+    now.href = '#/today'; now.title = 'Today';
+    top.appendChild(now);
     document.documentElement.style.setProperty('--toph', top.offsetHeight + 'px');
   }
   H.drawTop = drawTop;
   function render() {
-    route(); drawTop(); view.innerHTML = '';
+    route(); root.onscroll = null; drawTop(); view.innerHTML = '';
     if (LOCAL) view.appendChild(el('div', 'notice local-note', '<b>Saved on this device only.</b> The Teaching Hub backend isn’t connected yet, so these settings stay in this browser. To share them with your other devices, deploy <code>teaching/backend/Code.gs</code> and put its web-app URL in <code>teaching/js/courses.js</code>.'));
     var body = el('div', 'hub-body hub-' + H.tab); view.appendChild(body);
     (H.views[H.tab] || H.views.today)(body);
@@ -179,7 +184,7 @@
   H.flash = function (box, msg, bad) { var n = box.querySelector(':scope > .flash'); if (!n) { n = el('div', 'flash'); box.appendChild(n); } n.className = 'flash' + (bad ? ' bad' : ''); n.textContent = msg; clearTimeout(n._t); n._t = setTimeout(function () { n.remove(); }, bad ? 9000 : 4000); };
   function keyScreen(msg) {
     route(); drawTop(); view.innerHTML = '';
-    var c = el('div', 'signin-card'); c.innerHTML = '<div class="signin-mark hub-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5-9 5.5z"/><path d="M7 12v4.5c3 2.2 7 2.2 10 0V12"/></svg></div><h1>Teaching Hub</h1><p class="muted">Enter the hub’s teacher key. It’s in the Teaching Hub Apps Script project (Project Settings → Script properties → TEACHER_KEY). Once you’re in, every course ledger on this device is signed in too.</p>';
+    var c = el('div', 'signin-card'); c.innerHTML = '<img class="signin-mark" src="' + T.HUB + 'assets/icon.svg" alt="" width="56" height="56"><h1>Teaching Hub</h1><p class="muted">Enter the hub’s teacher key. It’s in the Teaching Hub Apps Script project (Project Settings → Script properties → TEACHER_KEY). Once you’re in, every course ledger on this device is signed in too.</p>';
     if (msg) c.appendChild(el('div', 'notice', esc(msg)));
     var inp = el('input', 'field'); inp.type = 'password'; inp.placeholder = 'Teacher key'; inp.autocomplete = 'off'; c.appendChild(inp);
     var go = button('btn-primary btn-block', 'Open the hub', sub); c.appendChild(go);
@@ -226,66 +231,107 @@
   };
   H.badge = function (c, small) { return T.badge(c, 'cmark' + (small ? ' sm' : '')); };
 
-  /* ---------------- Today ---------------- */
+  /* ---------------- Today ----------------
+   * The day as a timeline: each period is as tall as it is long (lunch shows as the gap it is), and on today a
+   * highlighter line marks the time. The ‹ › and Today buttons sit in a fixed spot left of the date, and the week strip
+   * jumps to any day of the week. */
+  var PPM = 1.55;   // pixels per minute of the day
+  function weekOf(date) { var d = T.parse(date), dow = d.getDay(); var mon = T.addDays(date, dow === 0 ? 1 : dow === 6 ? 2 : 1 - dow); return [0, 1, 2, 3, 4].map(function (i) { return T.addDays(mon, i); }); }
   H.views.today = function (body) {
-    var date = /^\d{4}-\d{2}-\d{2}$/.test(H.arg) ? H.arg : T.today(), data = S.data;
-    var sem = T.semesterOn(date, data), ps = T.periods(date, data), now = T.slotAt(Date.now(), data);
-    var head = el('div', 'day-head');
-    var prev = button('btn-ghost btn-icon', '‹', function () { H.go('today', H.prevSchoolDay(T.addDays(date, -1))); }); prev.setAttribute('aria-label', 'Previous school day');
-    var next = button('btn-ghost btn-icon', '›', function () { H.go('today', H.nextSchoolDay(T.addDays(date, 1))); }); next.setAttribute('aria-label', 'Next school day');
-    var h = el('div', 'day-title', '<h1>' + esc(T.nice(date, { weekday: 'long', month: 'long', day: 'numeric' })) + '</h1><div class="muted">' +
-      (ps.length ? esc(H.dayLabel(date)) + (sem ? ' · ' + esc(sem.name) : ' · not in a semester') : T.dayType(date) ? 'No school' : 'Weekend') + '</div>');
-    head.appendChild(prev); head.appendChild(h); head.appendChild(next);
-    if (date !== T.today()) head.appendChild(button('btn-small', 'Today', function () { H.go('today'); }));
+    var date = /^\d{4}-\d{2}-\d{2}$/.test(H.arg) ? H.arg : T.today(), data = S.data, today = T.today();
+    var sem = T.semesterOn(date, data), ps = T.periods(date, data), t = T.dayType(date);
+    var page = el('div', 'today'); body.appendChild(page);
+    /* the bar: arrows first, so they never move */
+    var bar = el('div', 'day-bar');
+    var nav = el('div', 'day-nav');
+    var prev = button('btn-icon', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>', function () { H.go('today', H.prevSchoolDay(T.addDays(date, -1))); }); prev.setAttribute('aria-label', 'Previous school day'); prev.title = 'Previous school day';
+    var next = button('btn-icon', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>', function () { H.go('today', H.nextSchoolDay(T.addDays(date, 1))); }); next.setAttribute('aria-label', 'Next school day'); next.title = 'Next school day';
+    var tb = button('btn-today', 'Today', function () { H.go('today'); }); tb.disabled = date === today;
+    nav.appendChild(prev); nav.appendChild(next); nav.appendChild(tb); bar.appendChild(nav);
+    var sub = ps.length ? H.dayLabel(date) + (sem ? ', ' + sem.name : ' (not in a semester)') : t ? 'No school' : 'Weekend';
+    bar.appendChild(el('div', 'day-title', '<h1>' + esc(T.nice(date, { weekday: 'long', month: 'long', day: 'numeric' })) + '</h1><p>' + esc(sub) + '</p>'));
     var acts = el('div', 'day-acts');
-    acts.appendChild(button('btn-small', 'Sub plans for this day', function () { H.go('subs', date); }));
-    head.appendChild(acts);
-    body.appendChild(head);
-    if (!data.semesters.length) { body.appendChild(el('div', 'panel empty', '<h2>Set up your schedule</h2><p>Tell the hub which course you teach in each block this semester, and it will make the classes in each ledger and fill this page.</p><a class="btn btn-primary" href="#/schedule">Go to Schedule</a>')); return; }
-    if (!ps.length) { body.appendChild(el('div', 'panel empty', '<p class="muted">' + (T.dayType(date) ? 'No school on this day.' : 'It’s the weekend.') + '</p><button class="btn" type="button">Next school day ›</button>')); body.querySelector('.empty .btn').addEventListener('click', function () { H.go('today', H.nextSchoolDay(T.addDays(date, 1))); }); return; }
-    var list = el('div', 'today-list'), gaps = H.gaps(ps);
+    if (ps.length) { var sp = el('a', 'btn', 'Sub plans for this day'); sp.href = '#/subs/' + date; acts.appendChild(sp); }
+    bar.appendChild(acts);
+    page.appendChild(bar);
+    /* the week */
+    var wk = el('nav', 'week'); wk.setAttribute('aria-label', 'This week');
+    weekOf(date).forEach(function (d) {
+      var off = T.isOff(d, data), dt = T.dayType(d), b = el('a', 'wk-day' + (d === date ? ' is-sel' : '') + (d === today ? ' is-today' : '') + (off ? ' is-off' : ''));
+      b.href = '#/today/' + d; if (d === date) b.setAttribute('aria-current', 'date');
+      b.innerHTML = '<span class="wk-n">' + esc(T.nice(d, { weekday: 'short' })) + ' <b>' + T.parse(d).getDate() + '</b></span><span class="wk-t">' + (off ? 'No school' : T.dayType(d) === 'fri' ? 'Short day' : esc(H.dayLabel(d))) + '</span>';
+      wk.appendChild(b);
+    });
+    page.appendChild(wk);
+    if (!data.semesters.length) { page.appendChild(el('div', 'empty', '<h2>Set up your schedule</h2><p>Tell the hub which course you teach in each block this semester. It makes the classes in each ledger and fills this page.</p><a class="btn btn-primary" href="#/schedule">Open Schedule</a>')); return; }
+    if (!ps.length) { var em = el('div', 'empty', '<p>' + (t ? 'No school on this day.' : 'It’s the weekend.') + '</p>'); var nb = el('a', 'btn', 'Next school day'); nb.href = '#/today/' + H.nextSchoolDay(T.addDays(date, 1)); em.appendChild(nb); page.appendChild(em); return; }
+    var tl = el('div', 'tl'), gaps = H.gaps(ps);
     ps.forEach(function (p, i) {
-      var e = T.entry(sem, p.block), c = e ? T.course(e.c) : null, isNow = now && now.date === date && now.block === p.block;
-      var card = el('section', 'period' + (c ? '' : ' prep') + (isNow ? ' now' : ''));
-      if (c) card.style.setProperty('--cc', c.colour);
-      card.appendChild(el('div', 'p-time', '<b>' + esc(T.time(p.start)) + '</b><span>' + esc(T.time(p.end)) + '</span>' + (isNow ? '<em>Now</em>' : '')));
-      var main = el('div', 'p-main');
-      main.appendChild(el('div', 'p-h', '<span class="blk">Block ' + p.block + '</span>' + (c ? H.badge(c, true) + '<b>' + esc(e.label || c.name + ' · Block ' + p.block) + '</b>' : '<b class="muted">Prep</b>')));
-      var items = el('div', 'p-items'); main.appendChild(items);
+      var e = T.entry(sem, p.block), c = e ? T.course(e.c) : null, dur = T.mins(p.end) - T.mins(p.start);
+      var slot = el('section', 'slot' + (c ? '' : ' prep')); slot.dataset.s = T.mins(p.start); slot.dataset.e = T.mins(p.end);
+      slot.style.minHeight = Math.round(dur * PPM) + 'px';
+      slot.appendChild(el('div', 'slot-time', '<b>' + esc(T.time(p.start).replace(/ (am|pm)$/, '')) + '</b><span>' + esc(T.time(p.end)) + '</span>'));
+      var card = el('div', 'slot-card'); if (c) card.style.setProperty('--cc', c.colour);
+      var hd = el('div', 'slot-h', '<span class="blk">' + p.block + '</span>' + (c ? H.badge(c, true) + '<b>' + esc(e.label || c.name + ' – Block ' + p.block) + '</b>' : '<b>Prep</b>'));
+      if (c) { var go = el('a', 'btn btn-small slot-ledger', 'Open ledger'); go.href = T.ledger(c, e.cls); hd.appendChild(go); }
+      card.appendChild(hd);
       if (c) {
-        if (!e.cls) items.appendChild(el('div', 'small muted', 'No class linked yet — save the schedule to make it.'));
+        var items = el('div', 'slot-items'); card.appendChild(items);
+        if (!e.cls) items.appendChild(el('p', 'note', 'No class linked yet. Save the schedule to make it.'));
         else {
-          items.appendChild(el('div', 'small muted', 'Loading…'));
+          items.appendChild(el('p', 'note', 'Reading the calendar…'));
           H.ready(c.id).then(function (b) {
             items.innerHTML = '';
-            if (!b) { items.appendChild(el('div', 'small bad-t', c.name + ': ' + H.statusText[BR[c.id].status] + '. ')); var a = el('a', 'small', 'Sign in under Settings'); a.href = '#/settings'; items.lastChild.appendChild(a); return; }
+            if (!b) { var n = el('p', 'note bad-t', c.name + ': ' + H.statusText[BR[c.id].status] + '. '); var a = el('a', '', 'Sign in under Settings'); a.href = '#/settings'; n.appendChild(a); items.appendChild(n); return; }
             b.entries(e.cls, date, date, p.block).then(function (r) {
-              if (!r.ok) { items.appendChild(el('div', 'small bad-t', 'Couldn’t read the calendar: ' + esc(r.error))); return; }
-              if (r.none) { items.appendChild(el('div', 'small muted', 'This class has no calendar yet. Make one in the Calendar tab.')); return; }
+              if (!r.ok) { items.appendChild(el('p', 'note bad-t', 'Couldn’t read the calendar: ' + esc(r.error))); return; }
+              if (r.none) { var n2 = el('p', 'note', 'This class has no calendar yet. '); var a2 = el('a', '', 'Make one'); a2.href = '#/calendar'; n2.appendChild(a2); items.appendChild(n2); return; }
               var its = r.days[date] || [];
-              if (!its.length) items.appendChild(el('div', 'small muted', 'Nothing planned.'));
-              its.forEach(function (it) {
-                var row = el('div', 'p-item'); row.appendChild(H.chip(it, { cls: 'big' }));
-                if (it.kind === 'lesson' || it.kind === 'intro') { var bx = el('div', 'p-links'); if (it.lessonUrl) { var l = el('a', 'btn btn-small', 'Lesson page ↗'); l.href = it.lessonUrl; l.target = '_blank'; l.rel = 'noopener'; bx.appendChild(l); } row.appendChild(bx); }
-                if (it.kind === 'mission' && it.due) row.appendChild(el('div', 'small muted', 'Due ' + esc(T.nice(it.due))));
-                items.appendChild(row);
-              });
+              if (!its.length) items.appendChild(el('p', 'note', 'Nothing planned.'));
+              its.forEach(function (it) { items.appendChild(itemRow(it)); });
             });
           });
         }
-        var go = el('a', 'btn btn-small p-ledger', 'Teacher Ledger ›'); go.href = T.ledger(c, e.cls); card.appendChild(main); card.appendChild(go);
-      } else card.appendChild(main);
-      list.appendChild(card);
-      gaps.filter(function (g) { return g.after === i; }).forEach(function (g) { list.appendChild(el('div', 'gap', esc(g.name) + ' · ' + esc(T.time(g.start)) + '–' + esc(T.time(g.end)))); });
+      }
+      slot.appendChild(card); tl.appendChild(slot);
+      gaps.filter(function (g) { return g.after === i; }).forEach(function (g) {
+        var gm = T.mins(g.end) - T.mins(g.start), gr = el('div', 'gap'); gr.dataset.s = T.mins(g.start); gr.dataset.e = T.mins(g.end);
+        gr.style.minHeight = Math.max(34, Math.round(gm * PPM * 0.6)) + 'px';
+        gr.innerHTML = '<span class="slot-time"><b>' + esc(T.time(g.start).replace(/ (am|pm)$/, '')) + '</b></span><span class="gap-l">' + esc(g.name) + ', ' + esc(T.time(g.start)) + ' to ' + esc(T.time(g.end)) + '</span>';
+        tl.appendChild(gr);
+      });
     });
-    body.appendChild(list);
-    var bm = el('div', 'panel tip'), url = T.HUB + 'go/';
-    bm.innerHTML = '<h3>One bookmark for every class</h3><p class="small muted">Bookmark this address (or add it to your iPad’s home screen). During a class it opens that class’s Teacher Ledger; at any other time it opens the class you taught last.</p>';
-    var row = el('div', 'linkrow'), inp = el('input', 'field'); inp.readOnly = true; inp.value = url; row.appendChild(inp);
-    row.appendChild(button('', 'Copy', function (ev) { inp.select(); try { navigator.clipboard.writeText(url); ev.target.textContent = 'Copied'; } catch (e) { document.execCommand('copy'); } }));
-    var op = el('a', 'btn', 'Try it'); op.href = url; row.appendChild(op);
-    bm.appendChild(row); body.appendChild(bm);
+    page.appendChild(tl);
+    if (date === today) placeNow(tl);
   };
+  /* one lesson / mission / test in a period, with its links */
+  function itemRow(it) {
+    var row = el('div', 'item'); row.appendChild(H.chip(it, { cls: 'big' }));
+    var links = el('div', 'item-links');
+    function link(t, href) { if (!href) return; var a = el('a', 'btn btn-small', t + ' <span aria-hidden="true">↗</span>'); a.href = href; a.target = '_blank'; a.rel = 'noopener'; links.appendChild(a); }
+    if (it.kind === 'lesson' || it.kind === 'intro') link('Lesson page', it.lessonUrl);
+    if (it.kind === 'mission') { link('Mission guide', it.teacherUrl); if (it.due) links.appendChild(el('span', 'note', it.day === it.len ? 'Due today' : 'Due ' + T.nice(it.due))); }
+    if (links.children.length) row.appendChild(links);
+    return row;
+  }
+  H.itemRow = itemRow;
+  /* the highlighter line at the time, inside the period (or lunch) it falls in; moved every minute */
+  var nowTimer = 0;
+  function placeNow(tl) {
+    clearInterval(nowTimer);
+    function put() {
+      if (!document.body.contains(tl)) { clearInterval(nowTimer); return; }
+      var d = new Date(), m = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60, old = tl.querySelector('.now-line'); if (old) old.remove();
+      [].forEach.call(tl.querySelectorAll('.slot, .gap'), function (s) { s.classList.remove('is-now'); });
+      var hit = [].filter.call(tl.querySelectorAll('.slot, .gap'), function (s) { return m >= +s.dataset.s && m < +s.dataset.e; })[0];
+      if (!hit) return;
+      hit.classList.add('is-now');
+      var line = el('div', 'now-line', '<span>' + esc(T.time(('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2))) + '</span>');
+      line.style.top = ((m - hit.dataset.s) / (hit.dataset.e - hit.dataset.s) * 100) + '%';
+      hit.appendChild(line);
+    }
+    put(); nowTimer = setInterval(put, 30000);
+  }
 
   /* ---------------- Schedule ---------------- */
   function semDraft() { return { id: '', name: 'Semester 1', start: '2026-09-02', end: '2027-01-29', blocks: { A: { c: 'robotics', cls: '', label: '' }, B: { c: 'math15', cls: '', label: '' }, C: null, D: { c: 'math15', cls: '', label: '' } }, draft: true }; }
@@ -404,129 +450,169 @@
     Promise.all(loads).then(draw);
   };
 
-  /* ---------------- Settings ---------------- */
+  /* ---------------- Settings ----------------
+   * One column of sections with a menu beside it (it follows you down the page and shows where you are). */
+  var SECTIONS = [['bell', 'Bell times'], ['daysoff', 'Days off'], ['courses', 'Course sign-ins'], ['subs', 'Sub plans'], ['bookmark', 'Universal bookmark']];
   H.views.settings = function (body) {
-    body.appendChild(el('div', 'page-h', '<h1>Universal settings</h1><p class="muted">Settings for every course. Bell times and days off are sent to every course’s ledger: they decide class time, when tests “until the end of class” end, and where lessons fall on every class calendar.</p>'));
-    body.appendChild(bellPanel());
-    var cols = el('div', 'set-cols'), a = el('div', 'set-col'), b = el('div', 'set-col'); cols.appendChild(a); cols.appendChild(b); body.appendChild(cols);
-    a.appendChild(daysOffPanel());
-    b.appendChild(coursesPanel()); b.appendChild(subPanel()); b.appendChild(devicePanel());
-    if (H.arg === 'daysoff') setTimeout(function () { var p = body.querySelector('.daysoff'); if (p) p.scrollIntoView({ behavior: 'smooth' }); }, 50);
+    var wrap = el('div', 'settings');
+    var aside = el('nav', 'set-nav'); aside.setAttribute('aria-label', 'Settings sections');
+    aside.appendChild(el('h1', '', 'Settings'));
+    aside.appendChild(el('p', 'set-lede', 'These apply to every course. Bell times and days off are sent to each course’s ledger.'));
+    var main = el('div', 'set-main');
+    SECTIONS.forEach(function (s) { var a = el('a', 'set-link', esc(s[1])); a.href = '#/settings/' + s[0]; a.dataset.sec = s[0]; a.addEventListener('click', function (ev) { ev.preventDefault(); var t = main.querySelector('#sec-' + s[0]); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.replaceState(null, '', '#/settings/' + s[0]); }); aside.appendChild(a); });
+    wrap.appendChild(aside); wrap.appendChild(main); body.appendChild(wrap);
+    main.appendChild(bellPanel()); main.appendChild(daysOffPanel()); main.appendChild(coursesPanel()); main.appendChild(subPanel()); main.appendChild(devicePanel());
+    /* the menu follows the section you're reading */
+    function mark() {
+      var best = SECTIONS[0][0], y = (top.offsetHeight || 60) + 90;
+      SECTIONS.forEach(function (s) { var n = main.querySelector('#sec-' + s[0]); if (n && n.getBoundingClientRect().top <= y) best = s[0]; });
+      if (root.innerHeight + root.scrollY >= document.documentElement.scrollHeight - 4) best = SECTIONS[SECTIONS.length - 1][0];
+      [].forEach.call(aside.querySelectorAll('.set-link'), function (a) { a.classList.toggle('on', a.dataset.sec === best); });
+    }
+    root.onscroll = function () { if (H.tab === 'settings') mark(); };
+    mark();
+    if (H.arg) setTimeout(function () { var t = main.querySelector('#sec-' + H.arg); if (t) t.scrollIntoView({ block: 'start' }); mark(); }, 30);
   };
+  function section(id, title, lede) {
+    var p = el('section', 'set-sec'); p.id = 'sec-' + id;
+    p.appendChild(el('h2', '', esc(title)));
+    if (lede) p.appendChild(el('p', 'set-lede', lede));
+    return p;
+  }
   function bellPanel() {
-    var p = el('section', 'panel bell-panel'); p.appendChild(el('h3', '', 'Bell times'));
-    p.appendChild(el('p', 'small muted', 'Mon/Wed are Day 1, Tue/Thu Day 2, and Friday has short periods. ' + (S.data.bellCustom ? 'You’ve changed these from the 2026–27 times.' : 'These are the 2026–27 times.')));
-    var t = el('table', 'tbl bell-tbl'), head = '<thead><tr><th>Block</th>';
-    T.DAYTYPES.forEach(function (d) { head += '<th>' + d[1] + '<div class="th-sub">' + d[2] + '</div></th>'; });
+    var p = section('bell', 'Bell times', 'Mon and Wed are Day 1, Tue and Thu are Day 2, and Friday has short periods. ' + (S.data.bellCustom ? 'You’ve changed these from the 2026–27 times.' : 'These are the 2026–27 times.'));
+    var t = el('table', 'bell'), head = '<thead><tr><th scope="col">Block</th>';
+    T.DAYTYPES.forEach(function (d) { head += '<th scope="col">' + d[2] + '<span>' + d[1] + '</span></th>'; });
     t.innerHTML = head + '</tr></thead>';
     var tb = el('tbody'), ins = {};
     T.BLOCKS.forEach(function (bk) {
-      var tr = el('tr'); tr.appendChild(el('td', '', '<b>' + bk + '</b>'));
+      var tr = el('tr'); tr.appendChild(el('th', '', '<span class="blk">' + bk + '</span>')); tr.firstChild.scope = 'row';
       T.DAYTYPES.forEach(function (d) {
-        var row = (S.data.bell[d[0]] || []).filter(function (x) { return x[0] === bk; })[0] || [bk, '', ''], td = el('td', 'bell-cell');
-        var s = el('input', 'field bell-t'), e = el('input', 'field bell-t'); s.type = e.type = 'time'; s.value = row[1]; e.value = row[2];
-        s.setAttribute('aria-label', 'Block ' + bk + ' ' + d[1] + ' start'); e.setAttribute('aria-label', 'Block ' + bk + ' ' + d[1] + ' end');
-        td.appendChild(s); td.appendChild(el('span', 'bell-to', '–')); td.appendChild(e); tr.appendChild(td); ins[bk + d[0]] = [s, e];
+        var row = (S.data.bell[d[0]] || []).filter(function (x) { return x[0] === bk; })[0] || [bk, '', ''], td = el('td');
+        var s = el('input', 'field time'), e = el('input', 'field time'); s.type = e.type = 'time'; s.value = row[1]; e.value = row[2];
+        s.setAttribute('aria-label', 'Block ' + bk + ', ' + d[2] + ' start'); e.setAttribute('aria-label', 'Block ' + bk + ', ' + d[2] + ' end');
+        var w = el('div', 'tpair'); w.appendChild(s); w.appendChild(el('span', 'to', 'to')); w.appendChild(e); td.appendChild(w); tr.appendChild(td); ins[bk + d[0]] = [s, e];
       });
       tb.appendChild(tr);
     });
     t.appendChild(tb); var w = el('div', 'tbl-wrap'); w.appendChild(t); p.appendChild(w);
     var acts = el('div', 'row-acts');
-    var sv = button('btn-primary btn-small', 'Save bell times', function () {
+    var sv = button('btn-primary', 'Save bell times', function () {
       var out = {}, bad = '';
-      T.DAYTYPES.forEach(function (d) { out[d[0]] = T.BLOCKS.map(function (bk) { var x = ins[bk + d[0]]; if (!x[0].value || !x[1].value || x[0].value >= x[1].value) bad = bad || ('Block ' + bk + ', ' + d[1]); return [bk, x[0].value, x[1].value]; }).sort(function (x, y) { return x[1] < y[1] ? -1 : 1; }); });
+      T.DAYTYPES.forEach(function (d) { out[d[0]] = T.BLOCKS.map(function (bk) { var x = ins[bk + d[0]]; if (!x[0].value || !x[1].value || x[0].value >= x[1].value) bad = bad || ('Block ' + bk + ' on ' + d[2]); return [bk, x[0].value, x[1].value]; }).sort(function (x, y) { return x[1] < y[1] ? -1 : 1; }); });
       if (bad) { H.flash(p, 'Check ' + bad + ': it needs a start time before its end time.', true); return; }
       sv.disabled = true;
       H.save('bell', out).then(function (d) { if (!d.ok) { sv.disabled = false; H.flash(p, 'Couldn’t save: ' + d.error, true); return; } return H.pushAll('bell').then(function (res) { sv.disabled = false; H.pushNote(p, res, 'bell'); }); }, function () { sv.disabled = false; H.flash(p, 'Couldn’t reach the hub backend.', true); });
     });
     acts.appendChild(sv);
-    if (S.data.bellCustom) acts.appendChild(button('btn-ghost btn-small', 'Go back to the 2026–27 times', function () { if (!confirm('Go back to the 2026–27 bell times?')) return; H.save('bell', 'reset').then(function () { return H.pushAll('bell'); }).then(function () { render(); }); }));
+    if (S.data.bellCustom) acts.appendChild(button('btn-ghost', 'Go back to the 2026–27 times', function () { if (!confirm('Go back to the 2026–27 bell times?')) return; H.save('bell', 'reset').then(function () { return H.pushAll('bell'); }).then(function () { render(); }); }));
     p.appendChild(acts); return p;
   }
   function daysOffPanel() {
-    var p = el('section', 'panel daysoff'); p.appendChild(el('h3', '', 'Days off'));
-    p.appendChild(el('p', 'small muted', 'No-school days for the whole school (PD days, holidays, breaks). Every class’s lessons move along around them, and work on a day off doesn’t count as in class. You can also tap days on the Calendar tab (Days off…).'));
-    var add = el('div', 'off-add'), a1 = el('input', 'field'), a2 = el('input', 'field'), nm = el('span', 'small muted', '');
+    var p = section('daysoff', 'Days off', 'PD days, holidays and breaks for the whole school. Every class’s lessons move along around them, and work on a day off doesn’t count as class time.');
+    var add = el('div', 'off-add'), a1 = el('input', 'field'), a2 = el('input', 'field');
     a1.type = a2.type = 'date'; a1.setAttribute('aria-label', 'First day off'); a2.setAttribute('aria-label', 'Last day off (for a break)');
-    add.appendChild(a1); add.appendChild(el('span', 'small muted', 'to')); add.appendChild(a2);
-    add.appendChild(button('btn-small', 'Add', function () {
+    var l1 = el('label', 'fld', '<span>From</span>'), l2 = el('label', 'fld', '<span>To (for a break)</span>'); l1.appendChild(a1); l2.appendChild(a2);
+    add.appendChild(l1); add.appendChild(l2);
+    add.appendChild(button('btn-primary', 'Add days off', function () {
       var s = a1.value, e = a2.value || a1.value; if (!s) { a1.focus(); return; } if (e < s) { var t = s; s = e; e = t; }
       var list = S.data.noSchool.slice(), d = s, n = 0;
       for (var g = 0; g < 120 && d <= e; g++) { if (T.dayType(d) && list.indexOf(d) < 0) { list.push(d); n++; } d = T.addDays(d, 1); }
       if (!n) { H.flash(p, 'Those are already days off (or weekends).', true); return; }
       saveOff(list, p);
     }));
-    add.appendChild(nm); p.appendChild(add);
+    p.appendChild(add);
     var groups = {}, list = el('div', 'off-list');
     S.data.noSchool.forEach(function (d) { var m = d.slice(0, 7); (groups[m] = groups[m] || []).push(d); });
     var months = Object.keys(groups).sort();
-    if (!months.length) list.appendChild(el('p', 'small muted', 'No days off yet.'));
+    if (!months.length) list.appendChild(el('p', 'note', 'No days off yet.'));
     months.forEach(function (m) {
       var g = el('div', 'off-m'); g.appendChild(el('div', 'off-mh', esc(T.nice(m + '-01', { month: 'long', year: 'numeric' }))));
       var chips = el('div', 'off-chips');
-      groups[m].forEach(function (d) { var c = el('span', 'off-chip', esc(T.nice(d, { weekday: 'short', day: 'numeric' }))); var x = button('off-x', '×', function () { saveOff(S.data.noSchool.filter(function (z) { return z !== d; }), p); }); x.setAttribute('aria-label', 'Remove ' + T.nice(d)); c.appendChild(x); chips.appendChild(c); });
+      groups[m].forEach(function (d) { var c = el('span', 'off-chip', esc(T.nice(d, { weekday: 'short', day: 'numeric' }))); var x = button('off-x', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>', function () { saveOff(S.data.noSchool.filter(function (z) { return z !== d; }), p); }); x.setAttribute('aria-label', 'Remove ' + T.nice(d)); c.appendChild(x); chips.appendChild(c); });
       g.appendChild(chips); list.appendChild(g);
     });
     p.appendChild(list);
-    var cal = el('a', 'btn btn-small btn-ghost', 'Pick days on the calendar ›'); cal.href = '#/calendar/daysoff'; p.appendChild(cal);
+    var cal = el('a', 'textlink', 'Or tap days on the calendar'); cal.href = '#/calendar/daysoff'; p.appendChild(cal);
     return p;
   }
   function saveOff(list, box) {
     list = list.slice().sort();
     return H.save('noschool', list).then(function (d) {
       if (!d.ok) { H.flash(box, 'Couldn’t save: ' + d.error, true); return; }
-      render();
-      return H.pushAll('noschool').then(function (res) { var p = view.querySelector('.daysoff') || view.querySelector('.hub-body'); if (p) H.pushNote(p, res, 'noschool'); return res; });
+      H.arg = 'daysoff'; render();
+      return H.pushAll('noschool').then(function (res) { var p = view.querySelector('#sec-daysoff') || view.querySelector('.hub-body'); if (p) H.pushNote(p, res, 'noschool'); return res; });
     }, function () { H.flash(box, 'Couldn’t reach the hub backend.', true); });
   }
   H.saveOff = saveOff;
   function coursesPanel() {
-    var p = el('section', 'panel courses'); p.appendChild(el('h3', '', 'Course sign-ins'));
-    p.appendChild(el('p', 'small muted', 'The hub reads and changes each course through its own ledger, with that ledger’s teacher key. A key used once here is kept in the hub, so on a new device signing in to the hub signs you in to every ledger.'));
+    var p = section('courses', 'Course sign-ins', 'The hub reads and changes each course through its own ledger. A ledger key used once is kept here, so on a new device signing in to the hub signs you in to every ledger.');
+    var list = el('div', 'courses'); p.appendChild(list);
     T.COURSES.forEach(function (c) {
-      var row = el('div', 'course-row'); row.innerHTML = H.badge(c) + '<div class="cr-t"><b>' + esc(c.name) + '</b><span class="cr-st small muted">Connecting…</span></div>';
-      var form = el('div', 'cr-form'); row.appendChild(form); p.appendChild(row);
+      var row = el('div', 'course-row'); row.innerHTML = H.badge(c) + '<div class="cr-t"><b>' + esc(c.name) + '</b><span class="cr-st">Connecting…</span></div>';
+      var form = el('div', 'cr-form'); row.appendChild(form); list.appendChild(row);
       H.bridge(c.id).then(function () {
-        var s = BR[c.id].status, st = row.querySelector('.cr-st');
-        st.textContent = H.statusText[s] + (s === 'ok' && BR[c.id].classes ? ' · ' + BR[c.id].classes.length + ' class' + (BR[c.id].classes.length === 1 ? '' : 'es') : '');
-        st.className = 'cr-st small ' + (s === 'ok' ? 'good-t' : 'bad-t');
+        var s = BR[c.id].status, st = row.querySelector('.cr-st'), n = BR[c.id].classes ? BR[c.id].classes.length : 0;
+        st.textContent = H.statusText[s] + (s === 'ok' ? ', ' + n + ' class' + (n === 1 ? '' : 'es') : '');
+        st.className = 'cr-st ' + (s === 'ok' ? 'good-t' : 'bad-t');
         form.innerHTML = '';
         if (s === 'nokey' || s === 'badkey') {
-          var k = el('input', 'field'); k.type = 'password'; k.placeholder = c.name + ' ledger key'; k.autocomplete = 'off';
-          var go = button('btn-small btn-primary', 'Sign in', function () { if (!k.value.trim()) return; go.disabled = true; H.setCourseKey(c.id, k.value.trim()).then(function (r) { go.disabled = false; if (!r.ok) { H.flash(p, c.name + ': ' + (r.error === 'bad key' ? 'that key didn’t work.' : r.error), true); return; } render(); }); });
+          var k = el('input', 'field'); k.type = 'password'; k.placeholder = c.name + ' ledger key'; k.autocomplete = 'off'; k.setAttribute('aria-label', c.name + ' ledger key');
+          var go = button('btn-primary', 'Sign in', function () { if (!k.value.trim()) return; go.disabled = true; H.setCourseKey(c.id, k.value.trim()).then(function (r) { go.disabled = false; if (!r.ok) { H.flash(p, c.name + ': ' + (r.error === 'bad key' ? 'that key didn’t work.' : r.error), true); return; } H.arg = 'courses'; render(); }); });
           form.appendChild(k); form.appendChild(go);
-        } else if (s === 'ok') { var o = el('a', 'btn btn-small btn-ghost', 'Open ledger ›'); o.href = T.ledger(c); form.appendChild(o); }
+        } else if (s === 'ok') { var o = el('a', 'btn btn-small', 'Open ledger'); o.href = T.ledger(c); form.appendChild(o); }
       });
     });
     return p;
   }
+  /* what every sub plan says, whatever the day */
+  H.DEFAULT_WELCOME = 'Thank you so much for covering for me! The parking map is on the last page: please park in stall {stall}. If you have any questions, please talk to someone in the office.';
+  H.DEFAULT_RULES = 'If anything comes up or you have any questions, don’t hesitate to let somebody down the hallway know. If they can’t help, the office can. Thanks!\nPhones are not to be used during class time.\nA student who needs to leave the room leaves their phone on my desk and takes the hall pass. One student out of the room at a time.';
+  H.DEFAULT_NOTES = { robotics: 'MacBooks: I leave them on my desk in the collab space. Send a couple of students to bring them in at the start of class, and make sure every one comes back to my desk before students leave.' };
+  H.subSettings = function () {
+    var s = S.data.sub || {};
+    return { teacher: s.teacher || 'Mr. Cathcart', room: s.room || 'Room 2997', stall: s.stall != null ? s.stall : '41', map: s.map !== false, welcome: s.welcome != null && s.welcome !== '' ? s.welcome : H.DEFAULT_WELCOME,
+      rules: s.rules != null && s.rules !== '' ? s.rules : H.DEFAULT_RULES, contact: s.contact || '', notes: Object.assign({}, H.DEFAULT_NOTES, s.notes || {}), emergency: (S.data.subx || {}).emergency || '' };
+  };
   function subPanel() {
-    var sub = S.data.sub || {}, p = el('section', 'panel subset'); p.appendChild(el('h3', '', 'Sub plan details'));
-    p.appendChild(el('p', 'small muted', 'Used on every sub plan. Keep anything a substitute needs every time here; each day’s plan adds the lessons.'));
-    function field(label, val, rows, ph) { var l = el('label', 'fld', '<span>' + esc(label) + '</span>'), f = rows ? el('textarea', 'field') : el('input', 'field'); if (rows) f.rows = rows; f.value = val || ''; if (ph) f.placeholder = ph; l.appendChild(f); p.appendChild(l); return f; }
-    var who = field('Your name on the plans', sub.teacher || 'Mr. Cathcart');
-    var room = field('Room', sub.room || 'Room 2997');
-    var contact = field('Contact or notes for the sub (optional)', sub.contact || '', 2, 'e.g. email rcathcart@rvschools.ab.ca if anything comes up');
-    var rules = field('Rules and routines', sub.rules != null ? sub.rules : H.DEFAULT_RULES, 6);
+    var v = H.subSettings(), p = section('subs', 'Sub plans', 'What every sub plan says, whatever the day. Each day’s plan adds the lessons from the calendar.');
+    function field(label, val, rows, ph, hint) {
+      var l = el('label', 'fld', '<span>' + esc(label) + '</span>'), f = rows ? el('textarea', 'field') : el('input', 'field');
+      if (rows) f.rows = rows; f.value = val || ''; if (ph) f.placeholder = ph; l.appendChild(f); if (hint) l.appendChild(el('small', '', hint)); return { l: l, f: f };
+    }
+    var g = el('div', 'fld-row');
+    var who = field('Your name on the plans', v.teacher), room = field('Room', v.room), stall = field('Parking stall', v.stall);
+    g.appendChild(who.l); g.appendChild(room.l); g.appendChild(stall.l); p.appendChild(g);
+    var mapL = el('label', 'check'), mapC = el('input'); mapC.type = 'checkbox'; mapC.checked = v.map; mapL.appendChild(mapC); mapL.appendChild(el('span', '', 'Add the parking map (stall 41 circled) as the last page'));
+    p.appendChild(mapL);
+    var welcome = field('Welcome note (top of the plan)', v.welcome, 3, '', '{stall} is replaced with your parking stall.'); p.appendChild(welcome.l);
+    var rules = field('Extra information and class rules', v.rules, 5, '', 'One per line. Each line becomes a bullet.'); p.appendChild(rules.l);
+    var contact = field('Contact (optional)', v.contact, 2, 'e.g. email rcathcart@rvschools.ab.ca if anything comes up'); p.appendChild(contact.l);
     var notes = {};
-    T.COURSES.forEach(function (c) { notes[c.id] = field(c.name + ': notes for every ' + c.name + ' class (optional)', (sub.notes || {})[c.id] || '', 2, c.kind === 'robotics' ? 'e.g. kits are in the blue bins; students put everything back 5 minutes before the bell' : 'e.g. calculators are in the cupboard by the door'); });
-    var sv = button('btn-primary btn-small', 'Save sub plan details', function () {
+    T.COURSES.forEach(function (c) { var f = field(c.name + ': notes for every class (optional)', v.notes[c.id] || '', 2, c.kind === 'robotics' ? 'e.g. where the kits are kept' : 'e.g. where the calculators are kept'); notes[c.id] = f.f; p.appendChild(f.l); });
+    var em = field('Emergency procedures (Hour Zero)', v.emergency, 10, 'Paste your Hour Zero emergency procedures here. They become their own page in every sub plan.', 'A line ending in “:” becomes a heading; lines starting with “-” become bullets.'); p.appendChild(em.l);
+    var sv = button('btn-primary', 'Save sub plan details', function () {
       var n = {}; Object.keys(notes).forEach(function (k) { n[k] = notes[k].value; });
       sv.disabled = true;
-      H.save('sub', { room: room.value, rules: rules.value, contact: contact.value, notes: n, teacher: who.value }).then(function (d) { sv.disabled = false; H.flash(p, d.ok ? 'Saved.' : 'Couldn’t save: ' + d.error, !d.ok); }, function () { sv.disabled = false; H.flash(p, 'Couldn’t reach the hub backend.', true); });
+      H.save('sub', { teacher: who.f.value, room: room.f.value, stall: stall.f.value, map: mapC.checked, welcome: welcome.f.value, rules: rules.f.value, contact: contact.f.value, notes: n })
+        .then(function (d) { if (!d.ok) return d; return H.save('subx', { emergency: em.f.value }); })
+        .then(function (d) { sv.disabled = false; H.flash(p, d.ok ? 'Saved.' : 'Couldn’t save: ' + d.error, !d.ok); }, function () { sv.disabled = false; H.flash(p, 'Couldn’t reach the hub backend.', true); });
     });
-    p.appendChild(sv); return p;
+    var acts = el('div', 'row-acts'); acts.appendChild(sv); p.appendChild(acts);
+    return p;
   }
-  H.DEFAULT_RULES = 'No phones during class time.\nA student who leaves the room leaves their phone on my desk and takes the hall pass. One student out at a time.';
-  H.teacherName = function () { var s = S.data.sub || {}; return s.teacher || 'Mr. Cathcart'; };
+  H.teacherName = function () { return H.subSettings().teacher; };
   function devicePanel() {
-    var p = el('section', 'panel'); p.appendChild(el('h3', '', 'Universal bookmark'));
+    var p = section('bookmark', 'Universal bookmark', 'One address for every class. During a class it opens that class’s Teacher Ledger; at any other time, the class you taught last.');
     var url = T.HUB + 'go/';
-    p.appendChild(el('p', 'small muted', 'One address for every class: during a class it opens that class’s Teacher Ledger; at any other time, the class you taught last.'));
-    var row = el('div', 'linkrow'), inp = el('input', 'field'); inp.readOnly = true; inp.value = url; row.appendChild(inp);
+    var row = el('div', 'linkrow'), inp = el('input', 'field'); inp.readOnly = true; inp.value = url; inp.setAttribute('aria-label', 'Bookmark address'); row.appendChild(inp);
     row.appendChild(button('', 'Copy', function (ev) { inp.select(); try { navigator.clipboard.writeText(url); ev.target.textContent = 'Copied'; } catch (e) { document.execCommand('copy'); } }));
     p.appendChild(row);
-    if (!LOCAL) p.appendChild(button('btn-small btn-ghost', 'Forget the hub key on this device', function () { T.raw('teach/key', null); S.key = ''; keyScreen(); }));
+    var how = el('div', 'how');
+    how.innerHTML = '<p>To put it on your iPad’s Home Screen or your Mac’s Dock, open the set-up page below, then use <b>Share → Add to Home Screen</b> (iPad) or <b>File → Add to Dock</b> (Safari on a Mac). The set-up page stays put so the bookmark gets the hub’s icon; the bookmark itself opens your class.</p>';
+    var a = el('a', 'btn', 'Open the set-up page'); a.href = url + '?add=1'; a.target = '_blank'; a.rel = 'noopener'; how.appendChild(a);
+    p.appendChild(how);
+    if (!LOCAL) { var f = el('div', 'row-acts'); f.appendChild(button('btn-ghost', 'Forget the hub key on this device', function () { T.raw('teach/key', null); S.key = ''; keyScreen(); })); p.appendChild(f); }
     return p;
   }
 

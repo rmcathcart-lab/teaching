@@ -12,7 +12,8 @@
  *   BELL       the bell schedule { day1: [[block, 'HH:MM', 'HH:MM']…], day2: […], fri: […] }  (Mon/Wed Day 1, Tue/Thu Day 2)
  *   NOSCHOOL   days off ["2026-10-12", …], for the whole school
  *   SEMESTERS  [{ id, name, start, end, blocks: { A: { c: course id, cls: class code, label } | null (prep), … } }]
- *   SUB        sub-plan text { teacher, room, rules, contact, notes: { courseId: text } }
+ *   SUB        sub-plan text { teacher, room, stall, map, welcome, rules, contact, notes: { courseId: text } }
+ *   SUBX       the Hour Zero emergency procedures { emergency } (kept here, not on the public site)
  *   KEYS       each course ledger's teacher key { math10c: '…', … } — so signing in to the hub signs in everywhere
  * Reads: ?action=public (no key: bell, days off, semesters — the ledgers' course switcher and the bookmark use it)
  *        ?action=all&key=… (everything). Writes: ?action=save&key=…&what=bell|noschool|semesters|sub|keys&value=<json>
@@ -52,7 +53,7 @@ function publicData_() {
 function bell_() { var b = read_('BELL', null); return b && b.day1 && b.day2 && b.fri ? b : DEFAULT_BELL; }
 function all_() {
   var d = publicData_();
-  d.sub = read_('SUB', {}); d.keys = read_('KEYS', {}); d.bellCustom = !!read_('BELL', null);
+  d.sub = read_('SUB', {}); d.subx = read_('SUBX', {}); d.keys = read_('KEYS', {}); d.bellCustom = !!read_('BELL', null);
   return d;
 }
 
@@ -115,8 +116,13 @@ function save_(what, v) {
     if (what === 'sub') {
       var sb = v || {}, notes = {};
       Object.keys(sb.notes || {}).slice(0, 20).forEach(function (k) { if (COURSE_IDS.test(k)) notes[k] = text_(sb.notes[k], 1500); });
-      var sub = { room: clean_(sb.room, 40), rules: text_(sb.rules, 2500), contact: text_(sb.contact, 300), notes: notes, teacher: clean_(sb.teacher, 60) };
+      var sub = { room: clean_(sb.room, 40), rules: text_(sb.rules, 2500), contact: text_(sb.contact, 300), notes: notes, teacher: clean_(sb.teacher, 60),
+        stall: clean_(sb.stall, 12), map: sb.map !== false, welcome: text_(sb.welcome, 800) };
       write_('SUB', sub); return { ok: true, sub: sub };
+    }
+    if (what === 'subx') {
+      var sx = { emergency: text_((v || {}).emergency, 8000) };
+      write_('SUBX', sx); return { ok: true, subx: sx };
     }
     if (what === 'keys') {
       var have = read_('KEYS', {}), kv = v || {};

@@ -5,16 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Teacher Ledger</title>
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#f5f3ee">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231c2230'/%3E%3Cpath d='M10 26 32 13l22 13-22 13z' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/%3E%3Cpath d='M20 33v11c7 5 17 5 24 0V33' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#1d2433">
+<link rel="icon" type="image/svg+xml" href="../assets/icon.svg">
 <link rel="apple-touch-icon" href="../assets/icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Ledger">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <style>
-  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f5f3ee; color: #3a4254; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  .box { text-align: center; padding: 24px; }
-  .box b { color: #1c2230; }
-  a { color: #13807a; }
-  .spin { width: 26px; height: 26px; margin: 0 auto 14px; border: 3px solid #e2ded4; border-top-color: #1c2230; border-radius: 50%; animation: s .8s linear infinite; }
+  @font-face { font-family: 'Public Sans'; font-weight: 100 900; font-display: swap; src: url(../assets/fonts/public-sans-latin-wght-normal.woff2) format('woff2'); }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #eef1f5; color: #3c4558; font: 16px/1.5 'Public Sans', system-ui, -apple-system, sans-serif; }
+  .box { max-width: 460px; padding: 28px 24px; text-align: center; }
+  .box b { color: #1d2433; }
+  .box img { border-radius: 16px; box-shadow: 0 8px 24px rgba(29, 36, 51, .18); }
+  h1 { margin: 18px 0 8px; color: #1d2433; font-size: 26px; line-height: 1.2; }
+  ol { text-align: left; margin: 18px 0 0; padding-left: 22px; }
+  li { margin: 6px 0; }
+  a { color: #2f5fc4; }
+  .spin { width: 26px; height: 26px; margin: 0 auto 14px; border: 3px solid #dbe0e8; border-top-color: #1d2433; border-radius: 50%; animation: s .8s linear infinite; }
   @keyframes s { to { transform: rotate(1turn); } }
   @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 </style>
@@ -25,14 +32,24 @@
 <script>
 /* The universal bookmark: during a class, that class's Teacher Ledger; at any other time, the class taught last.
  * It uses the schedule saved on this device (refreshed from the Teaching Hub when it's more than an hour old).
+ * ?add=1 is the set-up page: it doesn't go anywhere, so "Add to Home Screen" / "Add to Dock" picks up this page's icon
+ * (the manifest's start_url is plain /teaching/go/, so the bookmark it makes still opens your class).
  * ?at=2026-11-04T10:40 pretends it's that time (for checking); ?show=1 shows where it would go instead of going. */
 (function () {
-  var T = window.TEACH, q = new URLSearchParams(location.search), msg = document.getElementById('msg');
+  var T = window.TEACH, q = new URLSearchParams(location.search), box = document.getElementById('box'), msg = document.getElementById('msg');
+  if (q.get('add')) {
+    document.title = 'Ledger';
+    box.innerHTML = '<img src="../assets/icon.png" alt="" width="96" height="96"><h1>Add your class bookmark</h1>' +
+      '<p>Add this page to your Home Screen or Dock. It opens the Teacher Ledger for the class you’re teaching (or the one you taught last).</p>' +
+      '<ol><li><b>iPad or iPhone:</b> tap Share, then <b>Add to Home Screen</b>.</li><li><b>Safari on a Mac:</b> choose File, then <b>Add to Dock</b>.</li><li><b>Chrome:</b> open the ⋮ menu, then <b>Cast, save and share → Install page as app</b>.</li></ol>' +
+      '<p style="margin-top:16px"><a href="./">Or go to your class now</a></p>';
+    return;
+  }
   var at = q.get('at') ? new Date(q.get('at')).getTime() : Date.now();
   function go(data) {
     var t = T.target(at, data);
-    if (!t) { msg.innerHTML = 'Your schedule isn’t set up yet. <a href="../#/schedule">Open the Teaching Hub</a>'; document.querySelector('.spin').remove(); return; }
-    var where = '<b>' + T.esc(t.label || (t.course.name + ' · Block ' + t.block)) + '</b>';
+    if (!t) { msg.innerHTML = 'Your schedule isn’t set up yet. <a href="../#/schedule">Open the Teaching Hub</a>'; var sp = document.querySelector('.spin'); if (sp) sp.remove(); return; }
+    var where = '<b>' + T.esc(t.label || (t.course.name + ' – Block ' + t.block)) + '</b>';
     msg.innerHTML = (t.why === 'now' ? 'Opening ' : t.why === 'first' ? 'Opening your first class: ' : 'Opening the class you taught last: ') + where + '…';
     if (q.get('show')) { msg.innerHTML += '<br><a href="' + t.url + '">' + T.esc(t.url) + '</a>'; document.querySelector('.spin').remove(); return; }
     location.replace(t.url);
