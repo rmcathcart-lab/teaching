@@ -1,9 +1,10 @@
 import json, urllib.request
 BASE = 'http://localhost:8811/'
-MOCKS = {'math10c': 'http://localhost:8765/', 'math15': 'http://localhost:8766/', 'robotics': 'http://localhost:8790/exec', 'teaching': 'http://localhost:8770/'}
+MOCKS = {'math10c': 'http://localhost:8765/', 'math15': 'http://localhost:8766/', 'math20-1': 'http://localhost:8767/', 'robotics': 'http://localhost:8790/exec', 'teaching': 'http://localhost:8770/'}
 CFG = {
   'math10c/js/config.js': "var HW_CONFIG = { siteName: 'Math 10C Practice', backend: '%s' };" % MOCKS['math10c'],
   'math15/js/config.js': "var HW_CONFIG = { siteName: 'Math 15 Practice', backend: '%s' };" % MOCKS['math15'],
+  'math20-1/js/config.js': "var HW_CONFIG = { siteName: 'Math 20-1 Practice', backend: '%s' };" % MOCKS['math20-1'],
   'robotics/js/config.js': "var RL_CONFIG = { siteName: 'Robotics', room: 'Room 2997', teacherEmail: 'x@y', backend: '%s' };" % MOCKS['robotics'],
 }
 def get(course, q):

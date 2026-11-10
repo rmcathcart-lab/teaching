@@ -25,6 +25,7 @@
   T.COURSES = [
     { id: 'math10c', mark: '10C', name: 'Math 10C', colour: '#0f5f5a', path: 'math10c', ns: '', key: 'hw:tkey', kind: 'math', prefix: '10c' },
     { id: 'math15', mark: '15', name: 'Math 15', colour: '#1e3a6e', path: 'math15', ns: 'm15/', key: 'hw:tkey', kind: 'math', prefix: '15' },
+    { id: 'math20-1', mark: '20-1', name: 'Math 20-1', colour: '#7a1f3d', path: 'math20-1', ns: 'm201/', key: 'hw:tkey', kind: 'math', prefix: '20' },
     { id: 'robotics', mark: 'RL', name: 'Robotics', full: 'Robotics (DTFI 15/25/35)', colour: '#0b1422', path: 'robotics', ns: 'rl/', key: 'tkey', kind: 'robotics', prefix: 'rl', robot: true }
   ];
   T.course = function (id) { return T.COURSES.filter(function (c) { return c.id === id; })[0] || null; };
@@ -35,7 +36,7 @@
   T.ROBOT = '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="10" fill="#070d17"/><path d="M32 18v-7" stroke="#22d3ee" stroke-width="3"/><circle cx="32" cy="8.5" r="4.5" fill="#ff8a3d"/><rect x="7" y="28" width="6" height="13" rx="2" fill="#22d3ee"/><rect x="51" y="28" width="6" height="13" rx="2" fill="#22d3ee"/><rect x="12" y="17" width="40" height="36" rx="7" fill="#22d3ee"/><rect x="19" y="26" width="10" height="10" rx="2.5" fill="#070d17"/><rect x="35" y="26" width="10" height="10" rx="2.5" fill="#070d17"/><circle cx="26.5" cy="28.5" r="1.8" fill="#22d3ee"/><circle cx="42.5" cy="28.5" r="1.8" fill="#22d3ee"/><rect x="23" y="42" width="18" height="4.5" rx="1.5" fill="#070d17"/></svg>';
   T.badge = function (c, cls) {
     c = typeof c === 'string' ? T.course(c) : c; if (!c) return '';
-    return c.robot ? '<span class="' + (cls || 'tsw-mark') + ' tsw-robot">' + T.ROBOT + '</span>' : '<span class="' + (cls || 'tsw-mark') + '" style="background:' + c.colour + '">' + esc(c.mark) + '</span>';
+    return c.robot ? '<span class="' + (cls || 'tsw-mark') + ' tsw-robot">' + T.ROBOT + '</span>' : '<span class="' + (cls || 'tsw-mark') + (c.mark.length > 3 ? ' is-long' : '') + '" style="background:' + c.colour + '">' + esc(c.mark) + '</span>';
   };
 
   /* ---- browser storage, without a site's ns.js prefix (all the course sites share rmcathcart-lab.github.io) ----
@@ -178,7 +179,7 @@
     '.tsw-row{display:flex;align-items:center;gap:11px;padding:7px 10px 7px 7px;border-radius:10px;color:inherit;text-decoration:none}' +
     'a.tsw-row:hover,a.tsw-row:focus-visible{background:#f4f1ea;outline:none}.tsw-row.is-here{cursor:default}' +
     '.tsw-mark{flex:none;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:9px;color:#fff;font-weight:800;font-size:13px;letter-spacing:.02em}' +
-    '.tsw-robot{background:none!important}.tsw-robot svg{width:34px;height:34px;display:block}' +
+    '.tsw-mark.is-long{font-size:11px;letter-spacing:-.02em}.tsw-robot{background:none!important}.tsw-robot svg{width:34px;height:34px;display:block}' +
     '.tsw-t{display:grid;line-height:1.2;flex:1;min-width:0}.tsw-t b{font-size:15px}.tsw-t>span{font-size:12.5px;color:#6b7280}' +
     '.tsw-tick{color:#2b55a0;font-weight:800}.tsw-blocks{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}' +
     '.tsw-bk{font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:999px;background:#eef0f4;color:#3a4254;text-decoration:none;border:1px solid transparent}a.tsw-bk:hover{border-color:#9aa3b5;background:#fff}' +

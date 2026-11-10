@@ -19,7 +19,7 @@ async def main():
         b = await p.chromium.launch()
         ctx = await b.new_context(viewport={'width': 1366, 'height': 900})
         await setup(ctx, keys=False)
-        await ctx.add_init_script("localStorage.setItem('m15/hw:tkey','testkey'); localStorage.setItem('rl/tkey','testkey'); localStorage.setItem('hw:tkey','testkey'); localStorage.setItem('m15/hw:nodemo','1');")
+        await ctx.add_init_script("localStorage.setItem('m15/hw:tkey','testkey'); localStorage.setItem('m201/hw:tkey','testkey'); localStorage.setItem('rl/tkey','testkey'); localStorage.setItem('hw:tkey','testkey'); localStorage.setItem('m15/hw:nodemo','1');")
         pg = await ctx.new_page(); errs_of(pg, errs, 'M15')
         await pg.goto(BASE + 'math15/teacher/?class=15-d&tab=settings'); await pg.wait_for_selector('.class-pick', timeout=20000); await pg.wait_for_timeout(1500)
         print('url after:', pg.url, '| class:', await pg.eval_on_selector('select.class-pick', 'e => e.value'))

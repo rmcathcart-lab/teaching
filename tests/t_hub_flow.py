@@ -10,7 +10,7 @@ async def main():
         b = await p.chromium.launch()
         ctx = await b.new_context(viewport={'width': 1366, 'height': 1000}, accept_downloads=True)
         await setup(ctx)
-        await ctx.add_init_script("if (!sessionStorage.getItem('x')) { sessionStorage.setItem('x','1'); localStorage.setItem('hw:tkey','testkey'); localStorage.setItem('m15/hw:tkey','testkey'); localStorage.setItem('rl/tkey','testkey'); }")
+        await ctx.add_init_script("if (!sessionStorage.getItem('x')) { sessionStorage.setItem('x','1'); localStorage.setItem('hw:tkey','testkey'); localStorage.setItem('m15/hw:tkey','testkey'); localStorage.setItem('m201/hw:tkey','testkey'); localStorage.setItem('rl/tkey','testkey'); }")
         pg = await ctx.new_page(); errs_of(pg, errs, 'H')
         await pg.goto(BASE + 'teaching/#/schedule'); await pg.wait_for_selector('.sem', timeout=15000)
         await pg.wait_for_function("document.querySelectorAll('.bclass select').length >= 3", timeout=20000)

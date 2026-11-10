@@ -56,6 +56,8 @@ textarea.field { resize: vertical; line-height: 1.45; }
 .blk { display: inline-grid; place-items: center; min-width: 26px; height: 24px; padding: 0 7px; border-radius: 7px; background: #e2e7ee; color: var(--ink-2); font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; }
 .cmark { flex: none; display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; color: #fff; font-weight: 800; font-size: 12px; }
 .cmark.sm { width: 24px; height: 24px; border-radius: 7px; font-size: 10px; }
+.cmark.is-long { font-size: 10.5px; letter-spacing: -.02em; } /* a four-character mark (20-1) */
+.cmark.sm.is-long { font-size: 8px; }
 .cmark.tsw-robot { background: none !important; }
 .cmark.tsw-robot svg { width: 100%; height: 100%; display: block; border-radius: inherit; }
 .notice { margin: 0 0 12px; padding: 10px 14px; border-radius: var(--r-sm); background: #e9effa; border: 1px solid #c8d5ee; font-size: 14.5px; }
@@ -213,6 +215,7 @@ table.bell { border-collapse: collapse; width: 100%; font-variant-numeric: tabul
 .course-row { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 14px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line-2); }
 .course-row:first-child { border-top: 0; padding-top: 4px; }
 .course-row .cmark { width: 38px; height: 38px; border-radius: 10px; font-size: 13px; }
+.course-row .cmark.is-long { font-size: 12px; }
 .cr-t { display: grid; line-height: 1.3; }
 .cr-t b { font-size: 16.5px; }
 .cr-st { font-size: 14px; }

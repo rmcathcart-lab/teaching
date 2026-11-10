@@ -8,7 +8,7 @@ async def main():
         b = await p.chromium.launch()
         ctx = await b.new_context(viewport={'width': 1280, 'height': 900})
         await setup(ctx, keys=False, backend=False)
-        await ctx.add_init_script("if (!sessionStorage.x) { sessionStorage.x = 1; localStorage.setItem('m15/hw:tkey','testkey'); localStorage.setItem('rl/tkey','testkey'); localStorage.setItem('hw:tkey','testkey'); }")
+        await ctx.add_init_script("if (!sessionStorage.x) { sessionStorage.x = 1; localStorage.setItem('m15/hw:tkey','testkey'); localStorage.setItem('m201/hw:tkey','testkey'); localStorage.setItem('rl/tkey','testkey'); localStorage.setItem('hw:tkey','testkey'); }")
         pg = await ctx.new_page(); errs_of(pg, errs, 'L')
         await pg.goto(BASE + 'teaching/#/schedule'); await pg.wait_for_function("document.querySelectorAll('.bclass select').length >= 3", timeout=20000)
         print('local banner:', await pg.locator('.local-note').count())

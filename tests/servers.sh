@@ -1,12 +1,13 @@
 #!/bin/bash
-# Serves the folder holding all four repos (teaching, math10c, math15, robotics side by side) on 8811, plus the four mock backends.
+# Serves the folder holding all five repos (teaching, math10c, math15, math20-1, robotics side by side) on 8811, plus the five mock backends.
 # Run from anywhere: bash teaching/tests/servers.sh, then python3 teaching/tests/t_hub_flow.py (and t_ledgers.py, t_local.py).
-# static server for all four sites + the four mock backends
+# static server for all five sites + the five mock backends
 SP=/tmp/teach_logs; mkdir -p $SP
 for p in $(pgrep -x node) $(pgrep -x python3); do if tr "\0" " " < /proc/$p/cmdline | grep -q "mock_server.js\|http.server 8811"; then kill $p; fi; done; sleep 0.5
 ROOT=$(cd "$(dirname "$0")/../.." && pwd); cd $ROOT && (nohup python3 -m http.server 8811 > $SP/static.log 2>&1 &)
 cd $ROOT/math10c && (nohup node backend/mock_server.js 8765 20 > $SP/m10.log 2>&1 &)
 cd $ROOT/math15 && (nohup node backend/mock_server.js 8766 20 > $SP/m15.log 2>&1 &)
+cd $ROOT/math20-1 && (nohup node backend/mock_server.js 8767 20 > $SP/m201.log 2>&1 &)
 cd $ROOT/robotics && (nohup node backend/mock_server.js 8790 > $SP/rl.log 2>&1 &)
 cd $ROOT/teaching && (nohup node backend/mock_server.js 8770 > $SP/tm.log 2>&1 &)
 sleep 1.2
