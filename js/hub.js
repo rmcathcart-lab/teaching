@@ -111,6 +111,7 @@
   H.pushAll = function (what) {
     return Promise.all(T.COURSES.map(function (c) {
       return H.ready(c.id).then(function (b) {
+        if (!b && BR[c.id].status === 'nobackend') return { id: c.id, ok: true, skipped: true };   // a course with no backend yet (e.g. a new course site) has nothing to keep
         if (!b) return { id: c.id, ok: false, skipped: true, why: H.statusText[BR[c.id].status] };
         var p = what === 'bell' ? b.setBell(S.data.bellCustom ? S.data.bell : null) : b.setNoSchool(S.data.noSchool);
         return p.then(function (d) { return { id: c.id, ok: !!(d && d.ok), none: d && d.none, error: d && d.error }; }, function (e) { return { id: c.id, ok: false, error: e.message }; });
