@@ -25,6 +25,7 @@
   T.COURSES = [
     { id: 'math10c', mark: '10C', name: 'Math 10C', colour: '#0f5f5a', path: 'math10c', ns: '', key: 'hw:tkey', kind: 'math', prefix: '10c' },
     { id: 'math15', mark: '15', name: 'Math 15', colour: '#1e3a6e', path: 'math15', ns: 'm15/', key: 'hw:tkey', kind: 'math', prefix: '15' },
+    { id: 'math10-3', mark: '10-3', name: 'Math 10-3', colour: '#6e4a1c', path: 'math10-3', ns: 'm103/', key: 'hw:tkey', kind: 'math', prefix: '103' },
     { id: 'math20-1', mark: '20-1', name: 'Math 20-1', colour: '#7a1f3d', path: 'math20-1', ns: 'm201/', key: 'hw:tkey', kind: 'math', prefix: '20' },
     { id: 'robotics', mark: 'RL', name: 'Robotics', full: 'Robotics (DTFI 15/25/35)', colour: '#0b1422', path: 'robotics', ns: 'rl/', key: 'tkey', kind: 'robotics', prefix: 'rl', robot: true }
   ];
