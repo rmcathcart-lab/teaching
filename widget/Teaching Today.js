@@ -208,29 +208,30 @@ function medium(w, day) {
   });
   w.addSpacer();
 }
-/* Large: the cards stretch to share the widget's height (the flexible spacers inside each card do that), so there's
- * no empty space under the last block whatever the widget's size */
+/* Large: the cards stretch to share the widget's height, so there's no empty space under the last block. The two
+ * flexible spacers in each time tile do the stretching. iOS gives every flexible spacer at least 8 points, so they
+ * are also the tile's top and bottom padding, and nothing else in a card uses one: more of them and the four cards
+ * no longer fit the widget's height (the top and bottom get cut off). */
 function large(w, day) {
   const T = day.T, gaps = [];
   for (let i = 1; i < day.rows.length; i++) { const a = T.mins(day.rows[i - 1].p.end), b = T.mins(day.rows[i].p.start); if (b - a >= 20) gaps[i] = (a >= 660 && a <= 780 ? 'Lunch' : 'Break') + ' · ' + clock(T, day.rows[i - 1].p.end) + ' to ' + T.time(day.rows[i].p.start); }
-  w.setPadding(14, 12, 12, 12); w.spacing = 6;
-  header(w, day, 16); w.addSpacer(1);
+  w.setPadding(12, 12, 11, 12); w.spacing = 5;
+  header(w, day, 16);
   day.rows.forEach(function (r, i) {
     if (gaps[i]) { const g = w.addStack(); g.centerAlignContent(); g.addSpacer(); text(g, gaps[i], Font.mediumSystemFont(11), K.faint); g.addSpacer(); }
     const past = r.state === 'past', now = r.state === 'now', tn = r.c ? tones(r.c) : null;
-    const s = w.addStack(); s.cornerRadius = 14; s.setPadding(5, 5, 5, 0); s.url = r.url;
+    const s = w.addStack(); s.centerAlignContent(); s.cornerRadius = 14; s.setPadding(4, 4, 4, 0); s.url = r.url;
     s.backgroundColor = now ? K.nowBg : tn ? tn.card : K.card;
     if (now) { s.borderWidth = 2.5; s.borderColor = K.mark; }
     /* the time, on the course's colour */
-    const tm = s.addStack(); tm.layoutVertically(); tm.size = new Size(60, 0); tm.setPadding(5, 9, 5, 4); tm.cornerRadius = 10;
+    const tm = s.addStack(); tm.layoutVertically(); tm.size = new Size(60, 0); tm.setPadding(0, 9, 0, 4); tm.cornerRadius = 10;
     tm.backgroundColor = tn ? new Color(r.c.colour, past ? 0.5 : 1) : K.prep;
     tm.addSpacer();
     text(tm, clock(T, r.p.start), Font.heavySystemFont(16), tn ? tn.panelInk : K.ink);
     text(tm, 'to ' + clock(T, r.p.end), Font.mediumSystemFont(10.5), tn ? tn.panelSub : K.muted);
     tm.addSpacer();
     /* the class and what's on */
-    const body = s.addStack(); body.layoutVertically(); body.setPadding(3, 10, 3, 10); body.spacing = 3;
-    body.addSpacer();
+    const body = s.addStack(); body.layoutVertically(); body.setPadding(0, 10, 0, 10); body.spacing = 3;
     const top = body.addStack(); top.centerAlignContent(); top.spacing = 6;
     if (now) { const n = top.addStack(); n.setPadding(1, 5, 1, 5); n.cornerRadius = 5; n.backgroundColor = K.mark; text(n, 'NOW', Font.heavySystemFont(9.5), K.markInk); }
     text(top, r.label, Font.boldSystemFont(14), !r.e ? K.muted : past ? K.faint : tn ? tn.title : K.ink).minimumScaleFactor = 0.75;
@@ -245,7 +246,6 @@ function large(w, day) {
       });
       if (r.items.length > 2) text(body, '+ ' + (r.items.length - 2) + ' more', Font.systemFont(11), K.faint);
     }
-    body.addSpacer();
     s.addSpacer();
   });
 }
