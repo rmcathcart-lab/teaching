@@ -63,6 +63,7 @@ After changing `Code.gs`, deploy a **new version of the same deployment** so the
 | `assets/icon.svg`, `icon*.png`, `manifest.webmanifest` | The hub's icon (a day of blocks with the current one highlighted) and app manifest |
 | `assets/parking-map.jpg` | The school parking map with stall 41 circled, from Ryan's old sub plans (the last page of every sub plan) |
 | `go/index.html` | The universal bookmark. `?show=1&at=2026-11-05T13:00` shows where it would go at that time |
+| `widget/Teaching Today.js` | An iPhone widget for the Scriptable app: the day's blocks with each class's lesson, like Today (the next school day once the last class is over). It reads `?action=public` here and each course's `?action=cal`, and loads `js/courses.js` and each course's `js/config.js`, `js/catalog.js` and `js/calendar.js` (`js/cal.js` for robotics) to work the day out, so it needs no keys and follows changes to those files. Keep them loadable without a page (nothing at the top level that needs the document). To install: save the file to iCloud Drive → Scriptable, then add a Scriptable widget and pick the script |
 | `backend/Code.gs`, `backend/mock_server.js` | The Apps Script backend, and a local stand-in for tests (teacher key `teachkey`) |
 
 **Publishing:** GitHub Pages builds from the `gh-pages` branch, so push `main` to both: `git push origin main main:gh-pages`.
