@@ -83,18 +83,19 @@ function loadCourse(c) {
     return { backend: cfg.backend, ns: ns, C: ns.Cal, robotics: robotics };
   }));
 }
-/* what a class has on a date: [{ label, title, sub }] (the teacher's own entries first, as on the hub) */
+/* what a class has on a date: [{ label, title, sub, bg, ink }] (the teacher's own entries first, as on the hub).
+ * bg / ink = the unit's colour for the label chip, the same colours the hub's chips use. */
 function itemsOn(m, cal, off, date) {
   const C = m.C, L = C.layout(cal, off), out = [];
   (cal.events || []).forEach(function (e) { if (e.date === date) out.push({ label: (e.kind === 'exam' ? '📝 ' : '') + e.title, title: '', sub: '' }); });
   (L.byDate[date] || []).forEach(function (x) {
     if (m.robotics) {
       const i = C.info(x.k); if (!i) return;
-      out.push({ label: m.ns.mcode(i.num), title: i.title, sub: 'Day ' + x.day + ' of ' + x.len + (x.day === x.len ? ' · due' : '') });
+      out.push({ label: m.ns.mcode(i.num), title: i.title, sub: 'Day ' + x.day + ' of ' + x.len + (x.day === x.len ? ' · due' : ''), bg: m.ns.unitColour ? m.ns.unitColour(i.unit) : '#22d3ee', ink: '#0b1422' });
     } else {
       const i = C.info(x); if (!i) return;
       if (i.kind === 'test') out.push({ label: '📝 ' + C.label(x), title: '', sub: '' });
-      else out.push({ label: C.label(x), title: String(i.title || '').replace(/<[^>]+>/g, ''), sub: '' });
+      else out.push({ label: C.label(x), title: String(i.title || '').replace(/<[^>]+>/g, ''), sub: '', bg: m.ns.unitColor ? m.ns.unitColor(i.unit).solid : '#24508f', ink: '#ffffff' });
     }
   });
   return out;
@@ -147,31 +148,47 @@ async function loadDay() {
 
 /* ---------- drawing ---------- */
 function dyn(light, dark) { return Color.dynamic(new Color(light), new Color(dark)); }
+function mix(a, b, t) { const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16); let out = '#'; [16, 8, 0].forEach(function (sh) { out += ('0' + Math.round(((x >> sh) & 255) * (1 - t) + ((y >> sh) & 255) * t).toString(16)).slice(-2); }); return out; }
 const K = {
   bg: dyn('#eef1f5', '#141a26'), card: dyn('#ffffff', '#1f2737'), ink: dyn('#1d2433', '#eef1f5'), muted: dyn('#5b6577', '#a3acbd'),
-  faint: dyn('#8a93a3', '#6f7889'), nowBg: dyn('#fbf3c8', '#4a3f12'), mark: new Color('#f7d046'), white: new Color('#ffffff')
+  faint: dyn('#8a93a3', '#6f7889'), nowBg: dyn('#fbf3c8', '#4a3f12'), mark: new Color('#f7d046'), markInk: new Color('#4a3a00'), white: new Color('#ffffff'),
+  prep: dyn('#c9d0db', '#2b3445')
 };
 function text(stack, s, font, colour, lines) { const t = stack.addText(String(s)); t.font = font; t.textColor = colour; t.lineLimit = lines || 1; return t; }
 function clock(T, t) { return T.time(t).replace(/ (am|pm)$/, ''); }
+/* a course's colours: its own colour for the time panel, a pale tint of it for the card. Robotics is near-black, so
+ * its tint and accents use the Robotics Lab cyan */
+function tones(c) {
+  const accent = c.robot ? '#22d3ee' : c.colour;
+  return { panel: new Color(c.colour), panelInk: c.robot ? new Color('#22d3ee') : K.white, panelSub: new Color(c.robot ? '#8fdcec' : '#ffffff', 0.78),
+    card: dyn(mix(accent, '#ffffff', 0.88), mix(accent, '#141a26', 0.8)), title: dyn(mix(c.robot ? '#0e7490' : c.colour, '#000000', 0.25), mix(accent, '#ffffff', 0.55)) };
+}
 function badge(stack, c, w, h, size) {
   const b = stack.addStack(); b.size = new Size(w, h); b.cornerRadius = Math.round(h / 3.2); b.centerAlignContent();
   b.backgroundColor = new Color(c.colour);
   b.addSpacer(); const t = text(b, c.mark, Font.heavySystemFont(size), c.robot ? new Color('#22d3ee') : K.white); t.minimumScaleFactor = 0.6; b.addSpacer();
   return b;
 }
+/* a lesson's label as a chip in its unit's colour ("U4 L8", "M04"); tests and the teacher's own entries are plain */
+function chip(stack, it, size, dim) {
+  if (!it.bg) return text(stack, it.label, Font.boldSystemFont(size + 1.5), dim ? K.faint : K.ink);
+  const c = stack.addStack(); c.setPadding(1.5, 5, 1.5, 5); c.cornerRadius = 5; c.backgroundColor = new Color(it.bg, dim ? 0.45 : 1);
+  return text(c, it.label, Font.heavySystemFont(size), new Color(it.ink));
+}
 function header(w, day, size) {
   const T = day.T, h = w.addStack(); h.centerAlignContent(); h.url = link(T.HUB + '#/today/' + day.date);
-  text(h, day.title, Font.boldSystemFont(size), K.ink).minimumScaleFactor = 0.8;
-  h.addSpacer(6);
+  const parts = day.title.split(' · ');
+  if (parts.length > 1) { text(h, parts[0], Font.heavySystemFont(size), K.ink); h.addSpacer(6); text(h, parts[1], Font.mediumSystemFont(size), K.muted).minimumScaleFactor = 0.8; }
+  else text(h, day.title, Font.heavySystemFont(size), K.ink);
   h.addSpacer();
-  text(h, day.type + (offline ? ' · saved copy' : ''), Font.mediumSystemFont(size - 2), K.muted);
+  const pill = h.addStack(); pill.setPadding(2, 8, 2, 8); pill.cornerRadius = 9; pill.backgroundColor = K.mark;
+  text(pill, day.type + (offline ? ' · saved' : ''), Font.boldSystemFont(size - 3.5), K.markInk);
 }
-function what(r) { return r.items.length ? r.items.map(line).join('  +  ') : r.note; }
 
 function medium(w, day) {
   const T = day.T;
   w.setPadding(11, 9, 10, 9); w.spacing = 2;
-  header(w, day, 13); w.addSpacer(3);
+  header(w, day, 13.5); w.addSpacer(3);
   day.rows.forEach(function (r) {
     const s = w.addStack(); s.centerAlignContent(); s.setPadding(2.5, 5, 2.5, 6); s.cornerRadius = 7; s.spacing = 6; s.url = r.url;
     if (r.state === 'now') s.backgroundColor = K.nowBg;
@@ -179,36 +196,58 @@ function medium(w, day) {
     const tm = s.addStack(); tm.size = new Size(35, 16); tm.centerAlignContent(); tm.addSpacer();
     text(tm, clock(T, r.p.start), Font.semiboldSystemFont(12), past ? K.faint : K.ink);
     if (r.c) badge(s, r.c, 30, 16, 10); else { const gap = s.addStack(); gap.size = new Size(30, 16); gap.centerAlignContent(); gap.addSpacer(); text(gap, r.p.block, Font.semiboldSystemFont(11), K.faint); gap.addSpacer(); }
-    text(s, r.e ? what(r) || r.label : 'Prep', Font.mediumSystemFont(12.5), !r.e || past ? K.faint : r.items.length ? K.ink : K.muted);
-    s.addSpacer();
-  });
-  w.addSpacer();
-}
-function large(w, day) {
-  const T = day.T, gaps = [];
-  for (let i = 1; i < day.rows.length; i++) { const a = T.mins(day.rows[i - 1].p.end), b = T.mins(day.rows[i].p.start); if (b - a >= 20) gaps[i] = (a >= 660 && a <= 780 ? 'Lunch' : 'Break') + ' · ' + clock(T, day.rows[i - 1].p.end) + ' to ' + T.time(day.rows[i].p.start); }
-  w.setPadding(14, 12, 12, 12); w.spacing = 5;
-  header(w, day, 15); w.addSpacer(2);
-  day.rows.forEach(function (r, i) {
-    if (gaps[i]) { const g = w.addStack(); g.addSpacer(60); text(g, gaps[i], Font.mediumSystemFont(11), K.faint); g.addSpacer(); }
-    const past = r.state === 'past';
-    const s = w.addStack(); s.topAlignContent(); s.setPadding(7, 8, 7, 10); s.cornerRadius = 11; s.spacing = 10; s.url = r.url;
-    s.backgroundColor = r.state === 'now' ? K.nowBg : K.card;
-    const tm = s.addStack(); tm.layoutVertically(); tm.size = new Size(42, 0);
-    text(tm, clock(T, r.p.start), Font.boldSystemFont(13), past ? K.faint : K.ink);
-    text(tm, T.time(r.p.end), Font.systemFont(10.5), K.faint);
-    const body = s.addStack(); body.layoutVertically(); body.spacing = 2;
-    const top = body.addStack(); top.centerAlignContent(); top.spacing = 6;
-    if (r.c) badge(top, r.c, 30, 16, 10);
-    text(top, r.label, Font.boldSystemFont(13), !r.e || past ? K.faint : K.ink).minimumScaleFactor = 0.8;
-    if (r.e) {
-      if (!r.items.length) text(body, r.note, Font.systemFont(12), K.muted);
-      r.items.slice(0, 2).forEach(function (it) { text(body, line(it), Font.systemFont(12.5), past ? K.faint : K.muted, r.items.length > 1 ? 1 : 2); });
-      if (r.items.length > 2) text(body, '+ ' + (r.items.length - 2) + ' more', Font.systemFont(11), K.faint);
+    const colour = !r.e || past ? K.faint : r.items.length ? K.ink : K.muted;
+    if (!r.e) text(s, 'Prep', Font.mediumSystemFont(12.5), colour);
+    else if (!r.items.length) text(s, r.note || r.label, Font.mediumSystemFont(12.5), colour);
+    else {
+      const it = r.items[0]; chip(s, it, 10, past);
+      const rest = [it.title, it.sub].filter(Boolean).join(' · ') + (r.items.length > 1 ? '  + ' + r.items.slice(1).map(function (x) { return x.label; }).join(', ') : '');
+      if (rest) text(s, rest, Font.mediumSystemFont(12.5), colour);
     }
     s.addSpacer();
   });
   w.addSpacer();
+}
+/* Large: the cards stretch to share the widget's height (the flexible spacers inside each card do that), so there's
+ * no empty space under the last block whatever the widget's size */
+function large(w, day) {
+  const T = day.T, gaps = [];
+  for (let i = 1; i < day.rows.length; i++) { const a = T.mins(day.rows[i - 1].p.end), b = T.mins(day.rows[i].p.start); if (b - a >= 20) gaps[i] = (a >= 660 && a <= 780 ? 'Lunch' : 'Break') + ' · ' + clock(T, day.rows[i - 1].p.end) + ' to ' + T.time(day.rows[i].p.start); }
+  w.setPadding(14, 12, 12, 12); w.spacing = 6;
+  header(w, day, 16); w.addSpacer(1);
+  day.rows.forEach(function (r, i) {
+    if (gaps[i]) { const g = w.addStack(); g.centerAlignContent(); g.addSpacer(); text(g, gaps[i], Font.mediumSystemFont(11), K.faint); g.addSpacer(); }
+    const past = r.state === 'past', now = r.state === 'now', tn = r.c ? tones(r.c) : null;
+    const s = w.addStack(); s.cornerRadius = 14; s.setPadding(5, 5, 5, 0); s.url = r.url;
+    s.backgroundColor = now ? K.nowBg : tn ? tn.card : K.card;
+    if (now) { s.borderWidth = 2.5; s.borderColor = K.mark; }
+    /* the time, on the course's colour */
+    const tm = s.addStack(); tm.layoutVertically(); tm.size = new Size(60, 0); tm.setPadding(5, 9, 5, 4); tm.cornerRadius = 10;
+    tm.backgroundColor = tn ? new Color(r.c.colour, past ? 0.5 : 1) : K.prep;
+    tm.addSpacer();
+    text(tm, clock(T, r.p.start), Font.heavySystemFont(16), tn ? tn.panelInk : K.ink);
+    text(tm, 'to ' + clock(T, r.p.end), Font.mediumSystemFont(10.5), tn ? tn.panelSub : K.muted);
+    tm.addSpacer();
+    /* the class and what's on */
+    const body = s.addStack(); body.layoutVertically(); body.setPadding(3, 10, 3, 10); body.spacing = 3;
+    body.addSpacer();
+    const top = body.addStack(); top.centerAlignContent(); top.spacing = 6;
+    if (now) { const n = top.addStack(); n.setPadding(1, 5, 1, 5); n.cornerRadius = 5; n.backgroundColor = K.mark; text(n, 'NOW', Font.heavySystemFont(9.5), K.markInk); }
+    text(top, r.label, Font.boldSystemFont(14), !r.e ? K.muted : past ? K.faint : tn ? tn.title : K.ink).minimumScaleFactor = 0.75;
+    top.addSpacer();
+    if (r.e) {
+      if (!r.items.length) text(body, r.note, Font.systemFont(12.5), K.muted);
+      r.items.slice(0, 2).forEach(function (it) {
+        const ln = body.addStack(); ln.topAlignContent(); ln.spacing = 6;
+        chip(ln, it, 11, past);
+        const rest = [it.title, it.sub].filter(Boolean).join(' · ');
+        if (rest) text(ln, rest, Font.mediumSystemFont(13), past ? K.faint : K.ink, r.items.length > 1 ? 1 : 2).minimumScaleFactor = 0.9;
+      });
+      if (r.items.length > 2) text(body, '+ ' + (r.items.length - 2) + ' more', Font.systemFont(11), K.faint);
+    }
+    body.addSpacer();
+    s.addSpacer();
+  });
 }
 function small(w, day) {
   const T = day.T, r = day.focus;
